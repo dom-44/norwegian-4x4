@@ -1,0 +1,14 @@
+# Personal configuration
+Config/Secrets.xcconfig
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcworkspace/xcuserdata/
+.swiftpm/
+Packages/FourByFourCore/.build/
+
+# macOS
+.DS_Store

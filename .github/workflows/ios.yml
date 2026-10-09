@@ -1,0 +1,81 @@
+# Builds and tests the app on a GitHub-hosted Mac, so no local Mac is needed.
+# Produces an UNSIGNED .ipa artifact that you sign and install from Windows
+# with your own Apple ID (see README, "Building without a Mac").
+name: iOS build & test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Write local config
+        env:
+          # Optional repository secrets / variables (Settings > Secrets and variables > Actions).
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID }}
+        run: |
+          cat > Config/Secrets.xcconfig <<EOF
+          SPOTIFY_CLIENT_ID = ${SPOTIFY_CLIENT_ID:-YOUR_SPOTIFY_CLIENT_ID}
+          APP_BUNDLE_ID = ${APP_BUNDLE_ID:-com.example.norwegian4x4}
+          EOF
+
+      - name: Core unit tests (swift test)
+        working-directory: Packages/FourByFourCore
+        run: swift test
+
+      - name: Unit tests on iOS Simulator
+        run: |
+          SIM_ID=$(sh scripts/pick-simulator.sh)
+          echo "Using simulator $SIM_ID"
+          xcodebuild test \
+            -project Norwegian4x4.xcodeproj \
+            -scheme Norwegian4x4 \
+            -destination "id=$SIM_ID" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee test.log | grep -E "Test (Suite|Case).*(passed|failed)|error:|\*\* TEST" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" test.log
+
+      - name: Build for iPhone (unsigned)
+        run: |
+          xcodebuild build \
+            -project Norwegian4x4.xcodeproj \
+            -scheme Norwegian4x4 \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            | tee build.log | grep -E "error:|warning:|\*\* BUILD" || true
+          grep -q "\*\* BUILD SUCCEEDED \*\*" build.log
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Norwegian4x4.app Payload/
+          zip -qry Norwegian4x4-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Norwegian4x4-unsigned-ipa
+          path: Norwegian4x4-unsigned.ipa
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs
+          path: |
+            test.log
+            build.log
+          if-no-files-found: ignore

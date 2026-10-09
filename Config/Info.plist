@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged with the keys Xcode generates from INFOPLIST_KEY_* build settings. -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Norwegian 4x4 connects to your Polar H10 (or another Bluetooth heart rate monitor) to show live heart rate during workouts.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<!-- Keep receiving heart rate from the Polar H10 while locked / in another app. -->
+		<string>bluetooth-central</string>
+		<!-- Play spoken coaching and transition tones while the screen is locked. -->
+		<string>audio</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Spotify login callback</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>norwegian4x4</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>spotify</string>
+		<string>youtube</string>
+		<string>youtubemusic</string>
+	</array>
+	<!-- Spotify client ID is injected from Config/Secrets.xcconfig (not committed). -->
+	<key>SpotifyClientID</key>
+	<string>$(SPOTIFY_CLIENT_ID)</string>
+	<key>SpotifyRedirectURI</key>
+	<string>norwegian4x4://spotify-login-callback</string>
+</dict>
+</plist>

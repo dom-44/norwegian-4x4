@@ -1,0 +1,10 @@
+// Shared build settings for the Norwegian4x4 app target.
+// Personal values (team ID, Spotify client ID) live in Secrets.xcconfig,
+// which is git-ignored. Copy Secrets.example.xcconfig to get started.
+
+SPOTIFY_CLIENT_ID = YOUR_SPOTIFY_CLIENT_ID
+DEVELOPMENT_TEAM =
+// Bundle IDs must be unique per Apple ID; override in Secrets.xcconfig.
+APP_BUNDLE_ID = com.example.norwegian4x4
+
+#include? "Secrets.xcconfig"
