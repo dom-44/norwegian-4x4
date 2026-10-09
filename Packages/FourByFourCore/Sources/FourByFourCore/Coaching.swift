@@ -76,6 +76,12 @@ public struct CoachingAction: Equatable, Sendable {
     public var sound: SoundCue?
     public var haptic: HapticCue?
 
+    public init(speech: String? = nil, sound: SoundCue? = nil, haptic: HapticCue? = nil) {
+        self.speech = speech
+        self.sound = sound
+        self.haptic = haptic
+    }
+
     public var isEmpty: Bool { speech == nil && sound == nil && haptic == nil }
 }
 
