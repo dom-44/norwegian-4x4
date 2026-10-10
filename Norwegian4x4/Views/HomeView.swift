@@ -98,7 +98,12 @@ struct HomeView: View {
         switch prefs.provider {
         case .none: return "No music"
         case .manual: return "Manual — use any music app"
-        case .spotify: return "Spotify · \(model.music.spotify.status.label)"
+        case .spotify:
+            if prefs.autoMixEnabled, let mix = prefs.autoMix {
+                let genres = [mix.warmUp, mix.highIntensity, mix.recovery, mix.coolDown].map(\.genre.displayName)
+                return "Spotify · Genre mix: " + genres.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: ", ")
+            }
+            return "Spotify · \(model.music.spotify.status.label)"
         case .youtube: return "YouTube · opens the official app"
         }
     }

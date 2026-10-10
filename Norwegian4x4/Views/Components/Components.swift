@@ -109,3 +109,35 @@ struct SensorStatusRow: View {
         }
     }
 }
+
+/// The whole workout as coloured segments (one per phase, width by
+/// duration). Finished phases are full, the current one fills up.
+struct PhaseTimeline: View {
+    var phases: [PhaseDefinition]
+    var currentIndex: Int
+    var phaseFraction: Double
+    var height: CGFloat = 10
+
+    var body: some View {
+        GeometryReader { geo in
+            let total = phases.reduce(0) { $0 + $1.duration }
+            let spacing: CGFloat = 2
+            let available = max(0, geo.size.width - spacing * CGFloat(max(0, phases.count - 1)))
+            HStack(spacing: spacing) {
+                ForEach(phases) { phase in
+                    let width = total > 0 ? available * CGFloat(phase.duration / total) : 0
+                    let fill = phase.id < currentIndex ? 1 : (phase.id == currentIndex ? min(1, max(0, phaseFraction)) : 0)
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(Theme.color(for: phase.kind).opacity(0.22))
+                        Rectangle().fill(Theme.color(for: phase.kind)).frame(width: width * CGFloat(fill))
+                    }
+                    .frame(width: width)
+                }
+            }
+            .clipShape(Capsule())
+            .animation(.linear(duration: 0.25), value: phaseFraction)
+        }
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+}

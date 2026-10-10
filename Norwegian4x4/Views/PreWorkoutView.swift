@@ -62,6 +62,8 @@ struct PreWorkoutView: View {
     private var structureCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Structure").font(.headline)
+            PhaseTimeline(phases: plan.phases, currentIndex: -1, phaseFraction: 0, height: 12)
+                .padding(.bottom, 4)
             ForEach(plan.phases) { phase in
                 HStack(spacing: 10) {
                     RoundedRectangle(cornerRadius: 3)

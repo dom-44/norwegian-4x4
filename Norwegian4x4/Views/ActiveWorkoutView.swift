@@ -57,44 +57,60 @@ struct ActiveWorkoutView: View {
 
     private func content(_ progress: WorkoutProgress) -> some View {
         let phaseColor = progress.phase.map { Theme.color(for: $0.kind) } ?? Theme.accent
-        return VStack(spacing: 14) {
+        // Order = what matters while running: where am I, time left, heart
+        // rate, then music and controls. The ring is the only flexible element,
+        // so everything fits on small phones without scrolling.
+        return VStack(spacing: 12) {
             header(progress, color: phaseColor)
+            totalProgress(progress)
             banners
 
             ZStack {
-                ProgressRing(fraction: progress.phaseFraction, color: phaseColor, lineWidth: 20)
-                VStack(spacing: 2) {
+                ProgressRing(fraction: progress.phaseFraction, color: phaseColor, lineWidth: 18)
+                VStack(spacing: 4) {
                     Text(Format.countdown(progress.phaseRemaining))
-                        .font(.system(size: 76, weight: .heavy, design: .rounded).monospacedDigit())
-                        .minimumScaleFactor(0.6)
+                        .font(.system(size: 80, weight: .heavy, design: .rounded).monospacedDigit())
+                        .minimumScaleFactor(0.5)
                         .lineLimit(1)
                         .accessibilityLabel("\(Format.countdown(progress.phaseRemaining)) remaining in \(progress.phase?.name ?? "phase")")
-                    Text(progress.status == .paused ? "PAUSED" : "remaining")
-                        .font(.headline)
-                        .foregroundStyle(progress.status == .paused ? Color.yellow : Theme.secondaryText)
+                    if progress.status == .paused {
+                        Text("PAUSED").font(.headline.weight(.heavy)).foregroundStyle(.yellow)
+                    } else if let next = progress.nextPhase {
+                        Text("then \(next.name)")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.color(for: next.kind))
+                            .lineLimit(1)
+                    } else {
+                        Text("last phase").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.secondaryText)
+                    }
                 }
-                .padding(30)
+                .padding(28)
             }
+            .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: 300, maxHeight: 300)
-            .padding(.horizontal, 24)
+            .frame(maxHeight: .infinity)
+            .layoutPriority(-1)
             .id(workout.phaseChangeCount)
             .transition(.scale(scale: 0.96).combined(with: .opacity))
             .animation(.spring(duration: 0.4), value: workout.phaseChangeCount)
 
             heartRate
-            totalProgress(progress)
-            if let next = progress.nextPhase {
-                Text("Next: \(next.name) · \(Format.clock(next.duration))")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.secondaryText)
-            } else {
-                Text("Last phase").font(.subheadline.weight(.medium)).foregroundStyle(Theme.secondaryText)
-            }
-            Spacer(minLength: 0)
             controls(progress)
         }
         .padding(.horizontal)
         .padding(.bottom, 8)
+    }
+
+    /// "of 4 intervals" style context for the phase name.
+    private func phaseContext(_ phase: PhaseDefinition) -> String {
+        let phases = workout.session?.plan.phases ?? []
+        let intervals = phases.filter { $0.kind == .interval }.count
+        switch phase.kind {
+        case .interval: return "of \(intervals) · Go hard"
+        case .recovery: return "of \(max(intervals - 1, 1)) · Easy, keep moving"
+        case .warmUp: return "Build up gradually"
+        case .coolDown: return "Ease down gradually"
+        }
     }
 
     private func header(_ progress: WorkoutProgress, color: Color) -> some View {
@@ -104,8 +120,8 @@ struct ActiveWorkoutView: View {
                     .font(.title.weight(.heavy))
                     .foregroundStyle(color)
                 if let phase = progress.phase {
-                    Text("Phase \(phase.id + 1) of \(workout.session?.plan.phases.count ?? 0) · \(phase.kind.displayName)")
-                        .font(.subheadline)
+                    Text(phaseContext(phase))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(Theme.secondaryText)
                 }
             }
@@ -154,8 +170,6 @@ struct ActiveWorkoutView: View {
         var parts: [String] = []
         if let target = workout.target {
             parts.append("Target \(target.label)")
-        } else if let phase = workout.progress?.phase {
-            parts.append(phase.kind == .warmUp ? "Build up gradually" : "Ease down gradually")
         }
         if let bpm = workout.signal.liveBPM {
             parts.append("\(HeartRateZones.percentOfMax(bpm: bpm, maxHR: workout.maxHeartRate))% HRmax")
@@ -167,25 +181,21 @@ struct ActiveWorkoutView: View {
 
     private func totalProgress(_ progress: WorkoutProgress) -> some View {
         VStack(spacing: 6) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.12))
-                    Capsule().fill(Color.white.opacity(0.85))
-                        .frame(width: geo.size.width * min(1, max(0, progress.totalFraction)))
-                }
-            }
-            .frame(height: 8)
+            // One segment per phase in its colour: shows where you are in the
+            // whole workout and how many intervals are left at a glance.
+            PhaseTimeline(phases: workout.session?.plan.phases ?? [],
+                          currentIndex: progress.phase?.id ?? 0,
+                          phaseFraction: progress.phaseFraction)
             HStack {
-                Text("Elapsed \(Format.clock(progress.activeElapsed))")
+                Text(Format.clock(progress.activeElapsed))
                 Spacer()
-                Text("\(Format.percent(progress.totalFraction))")
-                Spacer()
-                Text("Left \(Format.countdown(progress.totalRemaining))")
+                Text("\(Format.countdown(progress.totalRemaining)) left")
             }
             .font(.footnote.monospacedDigit())
             .foregroundStyle(Theme.secondaryText)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(Format.clock(progress.activeElapsed)) elapsed, \(Format.countdown(progress.totalRemaining)) left in the workout")
     }
 
     private func controls(_ progress: WorkoutProgress) -> some View {
@@ -283,23 +293,22 @@ private struct NowPlayingBar: View {
 
     var body: some View {
         let spotify = model.music.spotify
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: spotify.isPaused ? "pause.circle" : "music.note").foregroundStyle(Theme.accent)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(spotify.trackTitle ?? "").font(.subheadline.weight(.semibold)).lineLimit(1)
-                    Text(spotify.trackArtist ?? "").font(.caption).foregroundStyle(Theme.secondaryText).lineLimit(1)
-                }
-                Spacer(minLength: 0)
+        // One row: song on the left, controls on the right (44 pt targets).
+        HStack(spacing: 8) {
+            Image(systemName: spotify.isPaused ? "pause.fill" : "music.note")
+                .foregroundStyle(Theme.accent)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(spotify.trackTitle ?? "").font(.subheadline.weight(.semibold)).lineLimit(1)
+                Text(spotify.trackArtist ?? "").font(.caption).foregroundStyle(Theme.secondaryText).lineLimit(1)
             }
             .accessibilityElement(children: .combine)
-            HStack {
-                control("backward.end.fill", label: "Previous song") { spotify.perform(.previous) }
-                control("arrow.counterclockwise", label: "Play song again from the start") { spotify.perform(.restart) }
-                control("forward.end.fill", label: "Next song") { spotify.perform(.next) }
-            }
+            Spacer(minLength: 4)
+            control("backward.end.fill", label: "Previous song") { spotify.perform(.previous) }
+            control("arrow.counterclockwise", label: "Play song again from the start") { spotify.perform(.restart) }
+            control("forward.end.fill", label: "Next song") { spotify.perform(.next) }
         }
-        .padding(12)
+        .padding(.leading, 12).padding(.trailing, 6).padding(.vertical, 6)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
@@ -309,10 +318,11 @@ private struct NowPlayingBar: View {
             Haptics.tap()
         } label: {
             Image(systemName: symbol)
-                .font(.title3.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .font(.body.weight(.semibold))
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(0.1), in: Circle())
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
         .accessibilityLabel(label)
     }
 }
