@@ -5,6 +5,10 @@
 	<!-- Merged with the keys Xcode generates from INFOPLIST_KEY_* build settings. -->
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Norwegian 4x4 connects to your Polar H10 (or another Bluetooth heart rate monitor) to show live heart rate during workouts.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Norwegian 4x4 saves finished workouts with heart rate and estimated active energy to Apple Health.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Norwegian 4x4 reads your weight, age and sex to estimate the energy burned during a workout.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<!-- Keep receiving heart rate from the Polar H10 while locked / in another app. -->

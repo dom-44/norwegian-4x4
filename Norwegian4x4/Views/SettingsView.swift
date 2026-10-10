@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var confirmDeleteHistory = false
     @State private var confirmReset = false
+    @State private var healthError: String?
 
     var body: some View {
         @Bindable var model = model
@@ -46,6 +47,8 @@ struct SettingsView: View {
                 NavigationLink("Music") { MusicSettingsView() }
             }
 
+            healthSection(model: model)
+
             Section {
                 Button("Delete all workout history", role: .destructive) { confirmDeleteHistory = true }
                 Button("Reset all settings", role: .destructive) { confirmReset = true }
@@ -79,6 +82,45 @@ struct SettingsView: View {
     // MARK: Heart rate
 
     @ViewBuilder
+    private func healthSection(model: AppModel) -> some View {
+        let health = model.settings.health ?? HealthSettings()
+        return Section {
+            Toggle("Save workouts to Apple Health", isOn: Binding {
+                health.enabled
+            } set: { on in
+                healthError = nil
+                guard on else { model.settings.health?.enabled = false; return }
+                Task {
+                    // Shows the Health permission sheet the first time.
+                    switch await model.health.requestAuthorization() {
+                    case .success:
+                        var updated = model.settings.health ?? HealthSettings()
+                        updated.enabled = true
+                        model.settings.health = updated
+                    case .failure(let error):
+                        healthError = error.localizedDescription
+                    }
+                }
+            })
+            if health.enabled {
+                Picker("Workout type", selection: Binding {
+                    health.activity
+                } set: { activity in
+                    model.settings.health?.activity = activity
+                }) {
+                    ForEach(HealthActivity.allCases) { Text($0.displayName).tag($0) }
+                }
+            }
+            if let healthError {
+                Text(healthError).font(.footnote).foregroundStyle(.orange)
+            }
+        } header: {
+            Text("Apple Health")
+        } footer: {
+            Text("After each workout: a workout entry with your heart-rate curve, plus estimated active energy if your weight, age and sex are set in Health. If saving is denied, change it in Settings › Health › Data Access & Devices.")
+        }
+    }
+
     private func heartRateSection(model: AppModel) -> some View {
         let profile = model.settings.heartRate
         Section {

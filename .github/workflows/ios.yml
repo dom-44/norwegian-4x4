@@ -59,10 +59,19 @@ jobs:
             | tee build.log | grep -E "error:|warning:|\*\* BUILD" || true
           grep -q "\*\* BUILD SUCCEEDED \*\*" build.log
 
-      - name: Package unsigned IPA
+      # Ad-hoc signature (no certificate) only to embed the entitlements:
+      # with CODE_SIGNING_ALLOWED=NO the app carries none, and AltStore /
+      # Sideloadly take the capabilities (HealthKit) from the app when they
+      # re-sign it with the user's Apple ID.
+      - name: Package IPA
         run: |
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/Norwegian4x4.app Payload/
+          for fw in Payload/Norwegian4x4.app/Frameworks/*.framework; do
+            [ -e "$fw" ] && codesign --force --sign - --timestamp=none "$fw"
+          done
+          codesign --force --sign - --timestamp=none --entitlements Config/Norwegian4x4.entitlements Payload/Norwegian4x4.app
+          codesign -d --entitlements - Payload/Norwegian4x4.app
           zip -qry Norwegian4x4-unsigned.ipa Payload
 
       - uses: actions/upload-artifact@v5

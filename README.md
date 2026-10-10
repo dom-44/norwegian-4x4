@@ -283,6 +283,21 @@ If the Spotify package can't be resolved, remove it under *Project › Package
 Dependencies*; all Spotify code is behind `#if canImport(SpotifyiOS)` and the app
 still builds.
 
+## 5b. Apple Health
+
+*Settings › Apple Health › Save workouts to Apple Health* asks for permission
+and then saves every finished workout (completed or ended early with data) as a
+workout of the chosen type — default *High Intensity Interval Training* —
+with the strap's heart rate (one point per 5 s) and, when weight, date of birth
+and sex are set in Health, active energy estimated from heart rate (Keytel et
+al. 2005). The app reads nothing else from Health.
+
+HealthKit is one of the capabilities Apple allows for free Apple IDs. The CI
+build ad-hoc signs the app with `Config/Norwegian4x4.entitlements` so the
+HealthKit entitlement is inside the IPA for AltStore / Sideloadly to carry
+over when they re-sign it. If the summary screen says the workout was not
+saved, check *Settings › Health › Data Access & Devices › 4x4*.
+
 ---
 
 ## 6. YouTube

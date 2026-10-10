@@ -18,6 +18,7 @@ final class AppModel {
     let sensor: HeartRateSensorManager
     let music: MusicCenter
     let workout: WorkoutController
+    let health: HealthExporter
 
     @ObservationIgnored private let settingsStore: SettingsStore
     @ObservationIgnored let historyStore: HistoryStore
@@ -33,6 +34,7 @@ final class AppModel {
         let sensor = HeartRateSensorManager(preferred: loaded.preferredSensor)
         let music = MusicCenter(preferences: loaded.music)
         let audio = CoachingAudio()
+        let health = HealthExporter()
 
         self.settingsStore = settingsStore
         self.historyStore = historyStore
@@ -40,10 +42,11 @@ final class AppModel {
         self.settings = loaded
         self.sensor = sensor
         self.music = music
+        self.health = health
         // The controller reads settings lazily through this closure.
         var settingsProvider: () -> AppSettings = { loaded }
         self.workout = WorkoutController(settings: { settingsProvider() }, sensor: sensor, music: music, audio: audio,
-                                         history: historyStore, activeStore: activeStore)
+                                         health: health, history: historyStore, activeStore: activeStore)
         settingsProvider = { [unowned self] in self.settings }
 
         history = historyStore.overviews()

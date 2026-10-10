@@ -21,6 +21,10 @@ final class WorkoutController {
     private(set) var phaseChangeCount = 0
     private(set) var saveError: String? = nil
 
+    enum HealthStatus: Equatable { case saving, saved, failed(String) }
+    /// Apple Health export of the last finished workout (nil = not enabled).
+    private(set) var healthStatus: HealthStatus? = nil
+
     var isActive: Bool { session != nil }
     var status: WorkoutStatus { progress?.status ?? .idle }
     var maxHeartRate: Int { session?.maxHeartRate ?? settings().heartRate.sanitizedMax }
@@ -29,6 +33,7 @@ final class WorkoutController {
     @ObservationIgnored private let sensor: HeartRateSensorManager
     @ObservationIgnored private let music: MusicCenter
     @ObservationIgnored private let audio: CoachingAudio
+    @ObservationIgnored private let health: HealthExporter
     @ObservationIgnored private let notifier = TransitionNotifier()
     @ObservationIgnored private let history: HistoryStore
     @ObservationIgnored private let activeStore: ActiveSessionStore
@@ -38,11 +43,12 @@ final class WorkoutController {
     @ObservationIgnored var onHistoryChanged: (() -> Void)?
 
     init(settings: @escaping () -> AppSettings, sensor: HeartRateSensorManager, music: MusicCenter, audio: CoachingAudio,
-         history: HistoryStore, activeStore: ActiveSessionStore, time: TimeSource = SystemTimeSource.shared) {
+         health: HealthExporter, history: HistoryStore, activeStore: ActiveSessionStore, time: TimeSource = SystemTimeSource.shared) {
         self.settings = settings
         self.sensor = sensor
         self.music = music
         self.audio = audio
+        self.health = health
         self.history = history
         self.activeStore = activeStore
         self.time = time
@@ -206,12 +212,32 @@ final class WorkoutController {
                 saveError = "Could not save workout: \(error.localizedDescription)"
                 finishedRecord = record
             }
+            exportToHealth(record)
         }
         finished.discardPersistedState()
         session = nil
         progress = nil
         restoredFromTermination = false
         updateIdleTimer()
+    }
+
+    /// Best effort; a Health failure is only reported on the summary screen.
+    private func exportToHealth(_ record: WorkoutRecord) {
+        let s = settings()
+        guard let healthSettings = s.health, healthSettings.enabled, !record.samples.isEmpty || record.summary.activeDuration > 60 else {
+            healthStatus = nil
+            return
+        }
+        healthStatus = .saving
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await health.save(record, activity: healthSettings.activity, fallbackAge: s.heartRate.age)
+                healthStatus = .saved
+            } catch {
+                healthStatus = .failed(error.localizedDescription)
+            }
+        }
     }
 
     // MARK: Timer & display

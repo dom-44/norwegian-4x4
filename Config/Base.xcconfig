@@ -7,4 +7,7 @@ DEVELOPMENT_TEAM =
 // Bundle IDs must be unique per Apple ID; override in Secrets.xcconfig.
 APP_BUNDLE_ID = com.example.norwegian4x4
 
+// HealthKit (see Config/Norwegian4x4.entitlements).
+CODE_SIGN_ENTITLEMENTS = Config/Norwegian4x4.entitlements
+
 #include? "Secrets.xcconfig"

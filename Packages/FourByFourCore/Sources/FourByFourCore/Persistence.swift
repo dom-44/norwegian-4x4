@@ -18,6 +18,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var preferredSensor: SensorPreference?
     public var keepScreenAwake = true
     public var hasCompletedOnboarding = false
+    /// Optional so settings saved before this existed still decode.
+    public var health: HealthSettings?
 
     public init() {}
 }

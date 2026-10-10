@@ -16,6 +16,16 @@ struct WorkoutSummaryView: View {
                 if let error = model.workout.saveError, isPostWorkout {
                     Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.footnote)
                 }
+                if let health = model.workout.healthStatus, isPostWorkout {
+                    switch health {
+                    case .saving:
+                        Label("Saving to Apple Health…", systemImage: "heart.text.square").foregroundStyle(Theme.secondaryText).font(.footnote)
+                    case .saved:
+                        Label("Saved to Apple Health", systemImage: "heart.text.square.fill").foregroundStyle(Theme.secondaryText).font(.footnote)
+                    case .failed(let message):
+                        Label("Not saved to Apple Health: \(message)", systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.footnote)
+                    }
+                }
                 statsGrid
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Heart rate").font(.headline)
