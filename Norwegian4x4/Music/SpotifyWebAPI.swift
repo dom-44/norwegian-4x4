@@ -31,15 +31,26 @@ struct SpotifyWebAPI {
     var session: URLSession = .shared
 
     func searchTracks(query: String, offset: Int) async throws -> [TrackCandidate] {
+        // `market=from_token` would need the user-read-private scope (403
+        // "Insufficient client scope"), so the device region is sent instead.
+        // It limits results to tracks playable there and adds `is_playable`.
+        let market = Locale.current.region?.identifier
+        do {
+            return try await search(query: query, offset: offset, market: market)
+        } catch WebAPIError.http(403, _) where market != nil {
+            return try await search(query: query, offset: offset, market: nil)
+        }
+    }
+
+    private func search(query: String, offset: Int, market: String?) async throws -> [TrackCandidate] {
         var components = URLComponents(url: Self.base.appendingPathComponent("search"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "q", value: query),
             URLQueryItem(name: "type", value: "track"),
             URLQueryItem(name: "limit", value: String(Self.searchPageSize)),
             URLQueryItem(name: "offset", value: String(offset)),
-            // Only tracks playable for this user; adds `is_playable`.
-            URLQueryItem(name: "market", value: "from_token"),
         ]
+        if let market { components.queryItems?.append(URLQueryItem(name: "market", value: market)) }
         let data = try await send(URLRequest(url: components.url!))
         return try SpotifySearchParser.tracks(from: data)
     }
