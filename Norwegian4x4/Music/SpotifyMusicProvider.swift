@@ -67,6 +67,9 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
     @ObservationIgnored private var connectWaiters: [CheckedContinuation<Void, Error>] = []
     /// Called after a successful authorization (a fresh token is available).
     @ObservationIgnored var onAuthorized: (@MainActor () -> Void)?
+    /// Spotify always starts playback when authorizing; set when the user
+    /// only wanted to connect, so playback is paused once connected.
+    @ObservationIgnored private var pauseRequestedAt: Date?
 
     #if canImport(SpotifyiOS)
     @ObservationIgnored private var remote: SPTAppRemote?
@@ -144,6 +147,18 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
     /// Opens Spotify to authorize and starts `uri` (empty = resume last played).
     /// Only call from a user action: it switches apps.
     func authorizeAndPlay(uri: String?) {
+        pauseRequestedAt = nil
+        startAuthorization(uri: uri)
+    }
+
+    /// Authorizes without wanting music: Spotify insists on playing
+    /// something, so it is paused as soon as the connection is up.
+    func connectWithoutPlaying() {
+        pauseRequestedAt = Date()
+        startAuthorization(uri: nil)
+    }
+
+    private func startAuthorization(uri: String?) {
         refreshAvailability()
         #if canImport(SpotifyiOS)
         guard let appRemote, isSpotifyInstalled else { return }
@@ -310,6 +325,11 @@ extension SpotifyMusicProvider: SPTAppRemoteDelegate, SPTAppRemotePlayerStateDel
             self.status = .connected
             self.finishConnect(error: nil)
             appRemote.playerAPI?.delegate = self
+            // Only right after a connect-only authorization; never pause a later (workout) reconnect.
+            if let requested = self.pauseRequestedAt, Date().timeIntervalSince(requested) < 120 {
+                appRemote.playerAPI?.pause(nil)
+            }
+            self.pauseRequestedAt = nil
             appRemote.playerAPI?.subscribe(toPlayerState: { _, _ in })
             appRemote.playerAPI?.getPlayerState { [weak self] result, _ in
                 guard let state = result as? SPTAppRemotePlayerState else { return }

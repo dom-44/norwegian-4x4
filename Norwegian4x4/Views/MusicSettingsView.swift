@@ -93,7 +93,7 @@ struct MusicSettingsView: View {
                 Button("Sign out of Spotify", role: .destructive) { spotify.signOut() }
             default:
                 Button(spotify.hasToken ? "Reconnect to Spotify" : "Connect Spotify") {
-                    spotify.authorizeAndPlay(uri: model.music.effectivePreferences.warmUp?.uri)
+                    spotify.connectWithoutPlaying()
                 }
                 if spotify.hasToken {
                     Button("Sign out of Spotify", role: .destructive) { spotify.signOut() }
@@ -254,7 +254,7 @@ struct AutoMixStatusView: View {
             case .needsAuthorization:
                 Text("Connect Spotify to build the mix.").foregroundStyle(Theme.secondaryText)
                 Button {
-                    model.music.spotify.authorizeAndPlay(uri: model.music.effectivePreferences.warmUp?.uri)
+                    model.music.spotify.connectWithoutPlaying()
                 } label: {
                     Label("Connect Spotify", systemImage: "link")
                 }
