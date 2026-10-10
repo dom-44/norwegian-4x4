@@ -125,6 +125,8 @@ final class WorkoutController {
     func end(save: Bool) {
         guard let session else { return }
         _ = session.cancel()
+        // The app started the music, so an early end stops it too.
+        music.pauseMusic()
         finish(session: session, save: save)
     }
 
