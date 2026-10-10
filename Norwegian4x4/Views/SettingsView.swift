@@ -81,7 +81,6 @@ struct SettingsView: View {
 
     // MARK: Heart rate
 
-    @ViewBuilder
     private func healthSection(model: AppModel) -> some View {
         let health = model.settings.health ?? HealthSettings()
         return Section {
@@ -121,6 +120,7 @@ struct SettingsView: View {
         }
     }
 
+    @ViewBuilder
     private func heartRateSection(model: AppModel) -> some View {
         let profile = model.settings.heartRate
         Section {
