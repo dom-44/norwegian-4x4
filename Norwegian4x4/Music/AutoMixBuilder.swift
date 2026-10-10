@@ -26,6 +26,8 @@ final class AutoMixBuilder {
     private(set) var builtAt: Date?
     /// Phases that got no or too few fitting tracks in the last build.
     private(set) var missingSlots: [MusicSlot] = []
+    /// Thumbs up / down from the workout screen (persisted).
+    private(set) var ratings = TrackRatings()
 
     var isBuilding: Bool { if case .building = state { return true } else { return false } }
 
@@ -33,6 +35,7 @@ final class AutoMixBuilder {
     @ObservationIgnored private let defaults = UserDefaults.standard
     @ObservationIgnored private var builtFor: AutoMixSettings?
     private static let selectionsKey = "autoMix.selections"
+    private static let ratingsKey = "autoMix.ratings"
     private static let builtAtKey = "autoMix.builtAt"
     private static let settingsKey = "autoMix.settings"
     private static func playlistKey(_ slot: MusicSlot) -> String { "autoMix.playlist.\(slot.rawValue)" }
@@ -53,6 +56,19 @@ final class AutoMixBuilder {
         if let data = defaults.data(forKey: Self.settingsKey) {
             builtFor = try? JSONDecoder().decode(AutoMixSettings.self, from: data)
         }
+        if let data = defaults.data(forKey: Self.ratingsKey), let stored = try? JSONDecoder().decode(TrackRatings.self, from: data) {
+            ratings = stored
+        }
+    }
+
+    func updateRatings(_ change: (inout TrackRatings) -> Void) {
+        change(&ratings)
+        defaults.set(try? JSONEncoder().encode(ratings), forKey: Self.ratingsKey)
+    }
+
+    /// IDs of the generated "4x4 ·" playlists, for removing a disliked song.
+    var playlistIDs: [String] {
+        MusicSlot.allCases.compactMap { defaults.string(forKey: Self.playlistKey($0)) }
     }
 
     /// True when the mix should be rebuilt before the next workout.
@@ -103,10 +119,10 @@ final class AutoMixBuilder {
                 let slotSettings = settings[slot]
                 let count = AutoMixSettings.trackCount(for: slot)
                 let curated = slotSettings.allGenres.map { CuratedCatalog.tracks(for: slot, genre: $0).map(\.candidate) }.filter { !$0.isEmpty }
-                var picked = TrackPicker.pickRoundRobin(from: curated, count: count, excluding: used, using: &rng)
+                var picked = TrackPicker.pickRoundRobin(from: curated, count: count, excluding: used, ratings: ratings, using: &rng)
                 if picked.count < count {
                     let taken = used.union(picked.map(\.id))
-                    let pool = slotSettings.allGenres.flatMap { candidates[$0] ?? [] }.filter { !taken.contains($0.id) }
+                    let pool = slotSettings.allGenres.flatMap { candidates[$0] ?? [] }.filter { !taken.contains($0.id) && !ratings.disliked.contains($0.id) }
                     picked += TrackPicker.pick(from: pool, features: features, profile: slotSettings.tempo,
                                                count: count - picked.count, using: &rng)
                 }

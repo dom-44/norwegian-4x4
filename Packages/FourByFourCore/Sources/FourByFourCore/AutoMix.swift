@@ -119,6 +119,12 @@ public struct AutoMixSlot: Codable, Equatable, Sendable {
         self.tempo = tempo
     }
 
+    /// All researched genres for the phase (the default when the mix is switched on).
+    public static func researched(for slot: MusicSlot) -> AutoMixSlot {
+        let genres = CuratedCatalog.genres(for: slot)
+        return AutoMixSlot(genre: genres.first ?? .edm, genres: genres.isEmpty ? nil : genres, tempo: .standard(for: slot))
+    }
+
     public var allGenres: [MusicGenre] {
         let list = genres ?? [genre]
         return list.isEmpty ? [genre] : list
@@ -140,10 +146,10 @@ public struct AutoMixSettings: Codable, Equatable, Sendable {
     public var coolDown: AutoMixSlot
 
     public init(enabled: Bool = true,
-                warmUp: AutoMixSlot = AutoMixSlot(genre: .pop, tempo: .standard(for: .warmUp)),
-                highIntensity: AutoMixSlot = AutoMixSlot(genre: .edm, tempo: .standard(for: .highIntensity)),
-                recovery: AutoMixSlot = AutoMixSlot(genre: .pop, tempo: .standard(for: .recovery)),
-                coolDown: AutoMixSlot = AutoMixSlot(genre: .chill, tempo: .standard(for: .coolDown))) {
+                warmUp: AutoMixSlot = .researched(for: .warmUp),
+                highIntensity: AutoMixSlot = .researched(for: .highIntensity),
+                recovery: AutoMixSlot = .researched(for: .recovery),
+                coolDown: AutoMixSlot = .researched(for: .coolDown)) {
         self.enabled = enabled
         self.warmUp = warmUp
         self.highIntensity = highIntensity
@@ -225,15 +231,66 @@ public struct CuratedTrack: Equatable, Sendable {
 /// Researched song lists per phase and genre (see CuratedCatalog+Data.swift).
 /// Preferred over search because every track is known to fit the phase.
 public enum CuratedCatalog {
+    /// Warm-up and recovery share the "moderate" lists; the builder never
+    /// uses a track twice in one mix.
     public static func tracks(for slot: MusicSlot, genre: MusicGenre) -> [CuratedTrack] {
         switch slot {
         case .highIntensity: return highIntensity[genre] ?? []
-        case .warmUp, .recovery, .coolDown: return []
+        case .warmUp, .recovery: return moderate[genre] ?? []
+        case .coolDown: return calm[genre] ?? []
         }
     }
 
     public static func hasTracks(for slot: MusicSlot, genre: MusicGenre) -> Bool {
         !tracks(for: slot, genre: genre).isEmpty
+    }
+
+    /// Genres with a researched list for the phase, in display order.
+    public static func genres(for slot: MusicSlot) -> [MusicGenre] {
+        MusicGenre.allCases.filter { hasTracks(for: slot, genre: $0) }
+    }
+}
+
+/// Thumbs up / down from the workout screen, by Spotify track ID.
+/// Disliked tracks are never picked again; liked ones are picked more often.
+public struct TrackRatings: Codable, Equatable, Sendable {
+    public enum Rating: Sendable { case liked, disliked }
+
+    public var liked: Set<String> = []
+    public var disliked: Set<String> = []
+
+    /// How much more likely a liked track is to be picked than an unrated one.
+    public static let likedWeight = 3.0
+
+    public init() {}
+
+    public func rating(for id: String) -> Rating? {
+        if liked.contains(id) { return .liked }
+        if disliked.contains(id) { return .disliked }
+        return nil
+    }
+
+    public mutating func like(_ id: String) {
+        disliked.remove(id)
+        liked.insert(id)
+    }
+
+    public mutating func dislike(_ id: String) {
+        liked.remove(id)
+        disliked.insert(id)
+    }
+
+    /// Tapping the active thumb again clears the rating.
+    public mutating func clear(_ id: String) {
+        liked.remove(id)
+        disliked.remove(id)
+    }
+
+    /// `spotify:track:ID` → `ID`.
+    public static func trackID(fromURI uri: String) -> String? {
+        let parts = uri.split(separator: ":")
+        guard parts.count == 3, parts[0] == "spotify", parts[1] == "track", !parts[2].isEmpty else { return nil }
+        return String(parts[2])
     }
 }
 
@@ -278,8 +335,12 @@ public enum TrackPicker {
     /// with several genres gets an even mix. Skips `excluded` IDs and keeps
     /// the per-artist limit.
     public static func pickRoundRobin<R: RandomNumberGenerator>(from lists: [[TrackCandidate]], count: Int, excluding excluded: Set<String> = [],
+                                                                ratings: TrackRatings = TrackRatings(),
                                                                 using rng: inout R) -> [TrackCandidate] {
-        var queues = lists.map { $0.filter { !excluded.contains($0.id) }.shuffled(using: &rng) }
+        var queues = lists.map { list in
+            weightedShuffle(list.filter { !excluded.contains($0.id) && !ratings.disliked.contains($0.id) },
+                            weight: { ratings.liked.contains($0.id) ? TrackRatings.likedWeight : 1 }, using: &rng)
+        }
         var picked: [TrackCandidate] = []
         var seen = excluded
         var perArtist: [String: Int] = [:]
@@ -297,6 +358,17 @@ public enum TrackPicker {
             }
         }
         return picked
+    }
+
+    /// Random order where an element with weight w comes early w times as
+    /// often as one with weight 1 (Efraimidis–Spirakis: sort by u^(1/w)).
+    static func weightedShuffle<T, R: RandomNumberGenerator>(_ items: [T], weight: (T) -> Double, using rng: inout R) -> [T] {
+        items.map { item -> (T, Double) in
+            let u = Double.random(in: Double.ulpOfOne..<1, using: &rng)
+            return (item, pow(u, 1 / max(weight(item), 0.0001)))
+        }
+        .sorted { $0.1 > $1.1 }
+        .map(\.0)
     }
 }
 

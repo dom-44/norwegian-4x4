@@ -41,6 +41,18 @@ struct MusicSettingsView: View {
                 } header: {
                     Text("Genre per phase")
                 }
+                let ratings = model.music.autoMix.ratings
+                Section {
+                    LabeledContent("Liked (played more often)", value: "\(ratings.liked.count)")
+                    LabeledContent("Removed", value: "\(ratings.disliked.count)")
+                    if !ratings.liked.isEmpty || !ratings.disliked.isEmpty {
+                        Button("Reset ratings", role: .destructive) { model.music.resetRatings() }
+                    }
+                } header: {
+                    Text("Your ratings")
+                } footer: {
+                    Text("Rate the playing song with 👍 / 👎 on the workout screen.")
+                }
             } else if prefs.provider == .spotify || prefs.provider == .youtube || prefs.provider == .manual {
                 Section {
                     ForEach(MusicSlot.allCases) { slot in
@@ -200,17 +212,16 @@ struct AutoMixSlotEditor: View {
         let standard = TempoProfile.standard(for: slot)
         Form {
             Section {
-                ForEach(MusicGenre.allCases) { genre in
+                ForEach(visibleGenres) { genre in
                     Button {
                         toggle(genre)
                     } label: {
                         HStack {
-                            Text(genre.displayName).foregroundStyle(.primary)
-                            if CuratedCatalog.hasTracks(for: slot, genre: genre) {
-                                Label("Hand-picked", systemImage: "star.fill")
-                                    .labelStyle(.iconOnly)
-                                    .font(.caption)
-                                    .foregroundStyle(.yellow)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(genre.displayName).foregroundStyle(.primary)
+                                let count = CuratedCatalog.tracks(for: slot, genre: genre).count
+                                Text(count > 0 ? "\(count) researched songs" : "No researched list: found by search")
+                                    .font(.caption).foregroundStyle(Theme.secondaryText)
                             }
                             Spacer()
                             if selectedGenres.contains(genre) {
@@ -223,10 +234,19 @@ struct AutoMixSlotEditor: View {
             } header: {
                 Text("Genres")
             } footer: {
-                Text(hasCuratedGenres
-                     ? "Pick one or more; the playlist mixes them evenly. ★ = researched song list for this phase, every song checked for tempo and energy. Other genres are found by search."
-                     : "Pick one or more; the playlist mixes them evenly.")
+                Text("Pick one or more; the playlist mixes them evenly. Every song was chosen for this phase and checked for tempo and energy. Songs you like come up more often; songs you dislike are removed.")
             }
+            if selectedGenres.contains(where: { !CuratedCatalog.hasTracks(for: slot, genre: $0) }) {
+                tempoSection(standard: standard)
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(Theme.background.ignoresSafeArea())
+        .navigationTitle(slot.displayName)
+    }
+
+    /// Only relevant for genres found by search (from older settings).
+    private func tempoSection(standard: TempoProfile) -> some View {
             Section {
                 Stepper("From \(tempo.bpm.lower) BPM", value: binding(\.tempo.bpm.lower), in: 50...max(50, tempo.bpm.upper - 5), step: 5)
                 Stepper("To \(tempo.bpm.upper) BPM", value: binding(\.tempo.bpm.upper), in: min(220, tempo.bpm.lower + 5)...220, step: 5)
@@ -238,17 +258,18 @@ struct AutoMixSlotEditor: View {
             } footer: {
                 Text("Songs analysed at half or double tempo count too (a 174 BPM drum & bass track is often listed as 87). Energy is matched automatically: \(Int(standard.minEnergy * 100))–\(Int(standard.maxEnergy * 100)) %.")
             }
-        }
-        .scrollContentBackground(.hidden)
-        .background(Theme.background.ignoresSafeArea())
-        .navigationTitle(slot.displayName)
+    }
+
+    /// Researched genres, plus any older search-based genre still selected
+    /// (so it can be unticked).
+    private var visibleGenres: [MusicGenre] {
+        let curated = CuratedCatalog.genres(for: slot)
+        return curated + selectedGenres.filter { !curated.contains($0) }
     }
 
     private var tempo: TempoProfile { model.settings.music.autoMix?[slot].tempo ?? .standard(for: slot) }
 
     private var selectedGenres: [MusicGenre] { (model.settings.music.autoMix ?? AutoMixSettings())[slot].allGenres }
-
-    private var hasCuratedGenres: Bool { MusicGenre.allCases.contains { CuratedCatalog.hasTracks(for: slot, genre: $0) } }
 
     /// At least one genre always stays selected.
     private func toggle(_ genre: MusicGenre) {

@@ -74,6 +74,42 @@ final class MusicCenter {
         }
     }
 
+    // MARK: Ratings (workout screen)
+
+    /// Rating of the song Spotify is playing now, if it is a track.
+    var currentRating: TrackRatings.Rating? {
+        spotify.trackURI.flatMap(TrackRatings.trackID(fromURI:)).flatMap { autoMix.ratings.rating(for: $0) }
+    }
+
+    /// 👍: picked more often in future mixes. Tapping again clears it.
+    func toggleLikeCurrentTrack() {
+        guard let id = spotify.trackURI.flatMap(TrackRatings.trackID(fromURI:)) else { return }
+        autoMix.updateRatings { ratings in
+            if ratings.rating(for: id) == .liked { ratings.clear(id) } else { ratings.like(id) }
+        }
+    }
+
+    /// 👎: skips the song, removes it from the generated playlists and never
+    /// picks it again. Removal is best effort (needs the Web API sign-in).
+    func dislikeCurrentTrack() {
+        guard let uri = spotify.trackURI, let id = TrackRatings.trackID(fromURI: uri) else { return }
+        autoMix.updateRatings { $0.dislike(id) }
+        spotify.perform(.next)
+        let playlists = autoMix.playlistIDs
+        guard webAuth.isSignedIn, !playlists.isEmpty else { return }
+        Task {
+            guard let token = try? await webAuth.validAccessToken() else { return }
+            let api = SpotifyWebAPI(token: token)
+            for playlist in playlists {
+                try? await api.removeItems(playlistID: playlist, uris: [uri])
+            }
+        }
+    }
+
+    func resetRatings() {
+        autoMix.updateRatings { $0 = TrackRatings() }
+    }
+
     /// User tapped "Sign in": shows Spotify's login sheet, then builds the mix.
     /// Returns an error message to show, or nil.
     func signInForAutoMix() async -> String? {

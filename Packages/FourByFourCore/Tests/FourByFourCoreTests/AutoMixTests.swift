@@ -147,15 +147,34 @@ final class AutoMixTests: XCTestCase {
     func testCuratedIntervalListsAreUsable() {
         for genre in [MusicGenre.edm, .drumAndBass, .trance, .hardRock, .punk] {
             let tracks = CuratedCatalog.tracks(for: .highIntensity, genre: genre)
-            XCTAssertGreaterThanOrEqual(tracks.count, 20, genre.rawValue)
+            XCTAssertGreaterThanOrEqual(tracks.count, 15, genre.rawValue)
             for track in tracks {
-                XCTAssertEqual(track.id.count, 22, "Spotify IDs are 22 characters: \(track.title)")
                 XCTAssertGreaterThanOrEqual(track.energy, 0.75, track.title)
             }
-            XCTAssertEqual(Set(tracks.map(\.id)).count, tracks.count, "no duplicates in \(genre.rawValue)")
         }
-        XCTAssertTrue(CuratedCatalog.tracks(for: .coolDown, genre: .edm).isEmpty)
         XCTAssertFalse(CuratedCatalog.hasTracks(for: .highIntensity, genre: .chill))
+    }
+
+    func testEveryPhaseHasResearchedLists() {
+        for slot in MusicSlot.allCases {
+            let genres = CuratedCatalog.genres(for: slot)
+            XCTAssertGreaterThanOrEqual(genres.count, 4, slot.rawValue)
+            for genre in genres {
+                let tracks = CuratedCatalog.tracks(for: slot, genre: genre)
+                XCTAssertGreaterThanOrEqual(tracks.count, 5, "\(slot.rawValue) \(genre.rawValue)")
+                XCTAssertTrue(tracks.allSatisfy { $0.id.count == 22 }, "Spotify IDs are 22 characters")
+                XCTAssertEqual(Set(tracks.map(\.id)).count, tracks.count, "no duplicates in \(slot.rawValue) \(genre.rawValue)")
+            }
+        }
+        XCTAssertTrue(CuratedCatalog.tracks(for: .coolDown, genre: .edm).allSatisfy { $0.energy <= 0.75 })
+        let intervalIDs = Set(MusicGenre.allCases.flatMap { CuratedCatalog.tracks(for: .highIntensity, genre: $0).map(\.id) })
+        let moderateIDs = Set(MusicGenre.allCases.flatMap { CuratedCatalog.tracks(for: .recovery, genre: $0).map(\.id) })
+        XCTAssertTrue(intervalIDs.isDisjoint(with: moderateIDs), "interval songs stay special")
+        // Defaults only use genres that have a list for the phase.
+        let mix = AutoMixSettings()
+        for slot in MusicSlot.allCases {
+            XCTAssertTrue(mix[slot].allGenres.allSatisfy { CuratedCatalog.hasTracks(for: slot, genre: $0) }, slot.rawValue)
+        }
     }
 
     func testRoundRobinMixesGenresEvenly() {
@@ -167,6 +186,49 @@ final class AutoMixTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(picked.filter { $0.id.hasPrefix("a") }.count, 3)
         XCTAssertGreaterThanOrEqual(picked.filter { $0.id.hasPrefix("b") }.count, 3)
         XCTAssertFalse(picked.contains { $0.id == "a1" })
+    }
+
+    // MARK: Ratings
+
+    func testDislikedTracksAreNeverPicked() {
+        var ratings = TrackRatings()
+        ratings.dislike("a0")
+        ratings.dislike("a1")
+        let list = (0..<5).map { track("a\($0)") }
+        for seed in 1...20 {
+            var rng = SeededGenerator(state: UInt64(seed))
+            let picked = TrackPicker.pickRoundRobin(from: [list], count: 5, ratings: ratings, using: &rng)
+            XCTAssertEqual(Set(picked.map(\.id)), ["a2", "a3", "a4"])
+        }
+    }
+
+    func testLikedTracksArePickedMoreOften() {
+        var ratings = TrackRatings()
+        ratings.like("t0")
+        let list = (0..<20).map { track("t\($0)") }
+        var likedHits = 0, otherHits = 0
+        for seed in 1...400 {
+            var rng = SeededGenerator(state: UInt64(seed))
+            let picked = Set(TrackPicker.pickRoundRobin(from: [list], count: 5, ratings: ratings, using: &rng).map(\.id))
+            if picked.contains("t0") { likedHits += 1 }
+            if picked.contains("t1") { otherHits += 1 }
+        }
+        // Unrated: ~25 % of workouts (5 of 20); liked with weight 3: clearly more.
+        XCTAssertGreaterThan(likedHits, otherHits * 2)
+        XCTAssertLessThan(likedHits, 400, "liked songs still rotate, they are not forced in")
+    }
+
+    func testRatingsToggle() {
+        var ratings = TrackRatings()
+        ratings.like("x")
+        XCTAssertEqual(ratings.rating(for: "x"), .liked)
+        ratings.dislike("x")
+        XCTAssertEqual(ratings.rating(for: "x"), .disliked)
+        XCTAssertFalse(ratings.liked.contains("x"))
+        ratings.clear("x")
+        XCTAssertNil(ratings.rating(for: "x"))
+        XCTAssertEqual(TrackRatings.trackID(fromURI: "spotify:track:4g6m1iaAsgdgDqgxGtvY0C"), "4g6m1iaAsgdgDqgxGtvY0C")
+        XCTAssertNil(TrackRatings.trackID(fromURI: "spotify:playlist:abc"))
     }
 
     func testOldSlotWithoutGenreListDecodes() throws {

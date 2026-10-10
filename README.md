@@ -264,6 +264,19 @@ songs) the previous mix or your own links are used; the workout is never
 affected. Pure logic (`AutoMix.swift`) is unit-tested; the network calls are
 not.
 
+#### Researched song lists and ratings
+
+Every phase draws from researched lists (`CuratedCatalog+Data.swift`) for
+EDM, Drum & Bass, Trance, Hard Rock and Punk Rock: high-energy songs for the
+intervals, mid-energy for warm-up and recovery, calm ones for the cool-down.
+Each song was resolved to its Spotify ID and checked for tempo and energy via
+ReccoBeats (sources and scripts: `scripts/curate/`). Several genres per phase
+are mixed evenly.
+
+On the workout screen 👍 makes a song three times as likely to be picked in
+future mixes; 👎 skips it, removes it from the `4x4 ·` playlists and excludes
+it from now on. Ratings are stored on the device (*Music › Your ratings*).
+
 ### What is and isn't supported
 
 | Feature | Status |

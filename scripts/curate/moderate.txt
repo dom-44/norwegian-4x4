@@ -1,0 +1,174 @@
+# Warm-up and recovery: steady, mid energy. genre|artist|title
+edm|Avicii|Hey Brother
+edm|Avicii|Waiting For Love
+edm|Avicii|Without You
+edm|Avicii|Lonely Together
+edm|Kygo|Firestone
+edm|Kygo|Stole the Show
+edm|Kygo|It Ain't Me
+edm|Calvin Harris|This Is What You Came For
+edm|David Guetta|Without You
+edm|Zedd|Stay The Night
+edm|Zedd|The Middle
+edm|The Chainsmokers|Closer
+edm|The Chainsmokers|Something Just Like This
+edm|Martin Garrix|In the Name of Love
+edm|Alan Walker|Alone
+edm|Marshmello|Happier
+edm|Clean Bandit|Rockabye
+edm|Major Lazer|Lean On
+edm|Major Lazer|Cold Water
+edm|DJ Snake|Let Me Love You
+edm|Robin Schulz|Prayer in C
+edm|Robin Schulz|Sugar
+edm|Felix Jaehn|Ain't Nobody (Loves Me Better)
+edm|Lost Frequencies|Reality
+edm|Disclosure|Latch
+edm|Martin Solveig|Hello
+edm|Duke Dumont|Ocean Drive
+edm|Sigala|Easy Love
+edm|Jonas Blue|Fast Car
+edm|Alesso|Cool
+edm|Calvin Harris|How Deep Is Your Love
+edm|Calvin Harris|Blame
+edm|Avicii|Levels
+dnb|Hybrid Minds|Touch
+dnb|Hybrid Minds|Kismet
+dnb|Netsky|Rio
+dnb|Netsky|Let's Leave Tomorrow
+dnb|Sub Focus|Turn It Around
+dnb|High Contrast|Racing Green
+dnb|High Contrast|Days Go By
+dnb|London Elektricity|Just One Second
+dnb|Calibre|Even If
+dnb|Fred V & Grafix|Recharge
+dnb|Metrik|Freefall
+dnb|Wilkinson|Half Light
+dnb|Rudimental|Not Giving In
+dnb|Sigma|Higher
+dnb|DJ Fresh|Gold Dust
+dnb|Chase & Status|Time
+dnb|Chase & Status|Count On Me
+dnb|Pendulum|The Island - Pt. I (Dawn)
+dnb|Camo & Krooked|Ember
+dnb|Shy FX|Feelings
+dnb|Delta Heavy|Take Me Away
+dnb|Goldie|Inner City Life
+dnb|Roni Size|Brown Paper Bag
+dnb|Rudimental|Free
+dnb|Sub Focus|Desire
+dnb|Wilkinson|Sun Goes Down
+dnb|Dimension|Remedy
+dnb|Andy C|Workout
+trance|Above & Beyond|Sun & Moon
+trance|Above & Beyond|Thing Called Love
+trance|Above & Beyond|Alone Tonight
+trance|Above & Beyond|Blue Sky Action
+trance|Robert Miles|Children
+trance|Chicane|Saltwater
+trance|Chicane|Offshore
+trance|Tiësto|Elements Of Life
+trance|ATB|Ecstasy
+trance|ATB|Let U Go
+trance|ATB|The Summer
+trance|Gareth Emery|Long Way Home
+trance|BT|Godspeed
+trance|Paul van Dyk|Nothing But You
+trance|Dash Berlin|Waiting
+trance|Dash Berlin|Man On The Run
+trance|System F|Cry
+trance|Binary Finary|1999
+trance|Alice Deejay|Back In My Life
+trance|Darude|Feel The Beat
+trance|Blank & Jones|Cream
+trance|Mauro Picotto|Komodo
+trance|Armin van Buuren|Ping Pong
+trance|Armin van Buuren|Another You
+trance|Delerium|Silence
+trance|Energy 52|Café Del Mar
+trance|Ferry Corsten|Punk
+trance|Sash!|Encore Une Fois
+trance|ATB|9 PM (Till I Come)
+hardrock|AC/DC|Back In Black
+hardrock|AC/DC|You Shook Me All Night Long
+hardrock|AC/DC|Highway to Hell
+hardrock|Guns N' Roses|Sweet Child O' Mine
+hardrock|Bon Jovi|It's My Life
+hardrock|Bon Jovi|You Give Love A Bad Name
+hardrock|Def Leppard|Pour Some Sugar On Me
+hardrock|Europe|The Final Countdown
+hardrock|Survivor|Eye of the Tiger
+hardrock|Queen|Don't Stop Me Now
+hardrock|Aerosmith|Walk This Way
+hardrock|Led Zeppelin|Whole Lotta Love
+hardrock|Led Zeppelin|Immigrant Song
+hardrock|Deep Purple|Smoke On The Water
+hardrock|Foo Fighters|Learn To Fly
+hardrock|Foo Fighters|Best Of You
+hardrock|Foo Fighters|My Hero
+hardrock|Nickelback|How You Remind Me
+hardrock|Nickelback|Rockstar
+hardrock|Linkin Park|Numb
+hardrock|Linkin Park|In the End
+hardrock|Muse|Uprising
+hardrock|Muse|Starlight
+hardrock|The White Stripes|Seven Nation Army
+hardrock|Kings of Leon|Sex on Fire
+hardrock|System Of A Down|Toxicity
+hardrock|Thirty Seconds To Mars|The Kill
+hardrock|Shinedown|Second Chance
+hardrock|Whitesnake|Here I Go Again
+hardrock|Journey|Separate Ways (Worlds Apart)
+hardrock|Boston|More Than a Feeling
+hardrock|Royal Blood|Figure It Out
+hardrock|Queens of the Stone Age|No One Knows
+punk|Green Day|Boulevard of Broken Dreams
+punk|Green Day|When I Come Around
+punk|Green Day|Longview
+punk|blink-182|First Date
+punk|blink-182|Feeling This
+punk|The Offspring|Self Esteem
+punk|The Offspring|Why Don't You Get A Job?
+punk|Sum 41|In Too Deep
+punk|Simple Plan|I'm Just a Kid
+punk|Good Charlotte|Lifestyles of the Rich & Famous
+punk|Good Charlotte|I Just Wanna Live
+punk|Jimmy Eat World|Sweetness
+punk|Fall Out Boy|Sugar, We're Goin Down
+punk|Fall Out Boy|Dance, Dance
+punk|Fall Out Boy|Thnks fr th Mmrs
+punk|Paramore|Ignorance
+punk|Paramore|crushcrushcrush
+punk|My Chemical Romance|Helena
+punk|My Chemical Romance|Welcome to the Black Parade
+punk|Avril Lavigne|Sk8er Boi
+punk|Ramones|Blitzkrieg Bop
+punk|Rise Against|Savior
+punk|Die Toten Hosen|Tage wie diese
+punk|Die Ärzte|Westerland
+punk|Die Ärzte|Männer sind Schweine
+punk|The Clash|Should I Stay or Should I Go
+punk|Weezer|Buddy Holly
+punk|Weezer|Say It Ain't So
+punk|Yellowcard|Ocean Avenue
+punk|All Time Low|Dear Maria, Count Me In
+punk|New Found Glory|My Friends Over You
+punk|The All-American Rejects|Dirty Little Secret
+dnb|Sigma|Changing
+dnb|Hybrid Minds|Higher Love
+dnb|Sub Focus|Turn Back Time
+dnb|Sub Focus|Don't You Feel It
+dnb|Wilkinson|Breathe
+dnb|Wilkinson|Need To Know
+dnb|Rudimental|Powerless
+dnb|Chase & Status|Lost & Not Found
+dnb|Chase & Status|Blk & Blu
+dnb|Camo & Krooked|Loving You Is Easy
+dnb|Netsky|Love Has Gone
+dnb|Netsky|Running Low
+dnb|London Elektricity|Meteorites
+dnb|High Contrast|Kiss Kiss Bang Bang
+dnb|Fred V & Grafix|Long Way Home
+dnb|Rudimental|Feel The Love
+dnb|Sigma|Nobody To Love
+dnb|Netsky|Memory Lane

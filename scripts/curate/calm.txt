@@ -1,0 +1,138 @@
+# Cool-down: calm, low energy. genre|artist|title
+edm|Kygo|Here for You
+edm|Kygo|Carry Me
+edm|Petit Biscuit|Sunset Lover
+edm|ODESZA|A Moment Apart
+edm|ODESZA|Bloom
+edm|ODESZA|Line Of Sight
+edm|Flume|Never Be Like You
+edm|ILLENIUM|Good Things Fall Apart
+edm|Alan Walker|Faded
+edm|Avicii|Broken Arrows
+edm|Avicii|Heaven
+edm|Martin Garrix|Scared To Be Lonely
+edm|Porter Robinson|Shelter
+edm|Bonobo|Kerala
+edm|Bonobo|Cirrus
+edm|Tycho|Awake
+edm|RÜFÜS DU SOL|Innerbloom
+edm|RÜFÜS DU SOL|On My Knees
+edm|Ben Böhmer|Breathing
+edm|Lost Frequencies|Are You With Me
+edm|Kygo|Firestone
+edm|Avicii|Wake Me Up
+edm|Seven Lions|Days To Come
+edm|Gryffin|Feel Good
+edm|Lane 8|Fingerprint
+edm|Marshmello|Silence
+dnb|LTJ Bukem|Horizons
+dnb|Calibre|Mr Right On
+dnb|Logistics|Together
+dnb|Etherwood|Weightless
+dnb|Etherwood|Souvenirs
+dnb|Technimatic|Better Days
+dnb|Halogenix|Paper Planes
+dnb|Hybrid Minds|Touch
+dnb|Hybrid Minds|Kismet
+dnb|Hybrid Minds|Lights
+dnb|Bcee|Is This Real?
+dnb|Lenzman|Open Your Eyes
+dnb|Alix Perez|Forsaken
+dnb|Makoto|Golden Girl
+dnb|Netsky|Rio
+dnb|London Elektricity|Just One Second
+dnb|Calibre|Even If
+dnb|Fred V & Grafix|Forest Fires
+dnb|Monrroe|Things That Remain
+dnb|Seba|Sunrise
+dnb|Total Science|Fresh Start
+trance|Chicane|Saltwater
+trance|Chicane|Offshore
+trance|Robert Miles|Children
+trance|Robert Miles|Fable
+trance|Above & Beyond|Alchemy
+trance|Above & Beyond|We're All We Need
+trance|Above & Beyond|Northern Soul
+trance|Enigma|Sadeness
+trance|Enigma|Return To Innocence
+trance|Moby|Porcelain
+trance|Moby|Why Does My Heart Feel so Bad?
+trance|Schiller|Das Glockenspiel
+trance|Schiller|Ein schöner Tag
+trance|BT|Dreaming
+trance|William Orbit|Barber's Adagio for Strings
+trance|Andain|Beautiful Things
+trance|Energy 52|Café Del Mar
+trance|Delerium|Silence
+trance|ATB|Desperate Religion
+trance|Above & Beyond|Sun & Moon
+trance|Sash!|Adelante
+trance|Paul van Dyk|Tell Me Why (The Riddle)
+trance|Ferry Corsten|Fire
+hardrock|Guns N' Roses|November Rain
+hardrock|Guns N' Roses|Knockin' On Heaven's Door
+hardrock|Metallica|Nothing Else Matters
+hardrock|Metallica|The Unforgiven
+hardrock|Scorpions|Wind Of Change
+hardrock|Scorpions|Still Loving You
+hardrock|Bon Jovi|Always
+hardrock|Bon Jovi|Bed Of Roses
+hardrock|Aerosmith|Dream On
+hardrock|Aerosmith|I Don't Want to Miss a Thing
+hardrock|Led Zeppelin|Stairway to Heaven
+hardrock|Pink Floyd|Wish You Were Here
+hardrock|Pink Floyd|Comfortably Numb
+hardrock|Audioslave|Like a Stone
+hardrock|Linkin Park|Shadow of the Day
+hardrock|Linkin Park|Leave Out All The Rest
+hardrock|Nickelback|Far Away
+hardrock|Nirvana|Come As You Are
+hardrock|Alice In Chains|Nutshell
+hardrock|Pearl Jam|Black
+hardrock|Extreme|More Than Words
+hardrock|Mr. Big|To Be With You
+hardrock|Skid Row|I Remember You
+hardrock|Poison|Every Rose Has Its Thorn
+hardrock|Whitesnake|Is This Love
+hardrock|Muse|Unintended
+hardrock|Creed|With Arms Wide Open
+hardrock|Foo Fighters|Times Like These
+punk|Green Day|Good Riddance (Time of Your Life)
+punk|Green Day|Wake Me Up When September Ends
+punk|blink-182|I Miss You
+punk|blink-182|Adam's Song
+punk|blink-182|Stay Together for the Kids
+punk|Simple Plan|Perfect
+punk|Simple Plan|Untitled (How Could This Happen to Me?)
+punk|Sum 41|Pieces
+punk|Rise Against|Swing Life Away
+punk|Rise Against|Hero Of War
+punk|The Offspring|Gone Away
+punk|Jimmy Eat World|Hear You Me
+punk|My Chemical Romance|Cancer
+punk|My Chemical Romance|I Don't Love You
+punk|Avril Lavigne|I'm with You
+punk|Avril Lavigne|Complicated
+punk|Paramore|The Only Exception
+punk|Good Charlotte|Hold On
+punk|Billy Talent|Surrender
+punk|Die Toten Hosen|Nur zu Besuch
+punk|Yellowcard|Only One
+punk|Weezer|Island In The Sun
+punk|The All-American Rejects|Move Along
+punk|Green Day|Boulevard of Broken Dreams
+punk|Fall Out Boy|Golden
+punk|Dashboard Confessional|Vindicated
+dnb|Hybrid Minds|Phoenix
+dnb|Hybrid Minds|Fragments
+dnb|Hybrid Minds|Superman
+dnb|Technimatic|Parting Glass
+dnb|Etherwood|Blue Leaves
+dnb|Etherwood|Begin By Letting Go
+dnb|Bcee|Northern Lights
+dnb|Calibre|Second Sun
+dnb|LSB|Leave Me Alone
+dnb|Alix Perez|Myriad
+dnb|Netsky|Moving With You
+dnb|High Contrast|Return Of Forever
+dnb|London Elektricity|Remember The Future

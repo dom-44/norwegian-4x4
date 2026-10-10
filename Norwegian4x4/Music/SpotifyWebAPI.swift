@@ -74,6 +74,15 @@ struct SpotifyWebAPI {
         _ = try await send(request)
     }
 
+    /// Removes all occurrences of the tracks (`DELETE /playlists/{id}/items`;
+    /// the body key is `items` since the February 2026 changes).
+    func removeItems(playlistID: String, uris: [String]) async throws {
+        var request = URLRequest(url: Self.base.appendingPathComponent("playlists/\(playlistID)/items"))
+        request.httpMethod = "DELETE"
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["items": uris.map { ["uri": $0] }])
+        _ = try await send(request)
+    }
+
     private func send(_ original: URLRequest) async throws -> Data {
         var request = original
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

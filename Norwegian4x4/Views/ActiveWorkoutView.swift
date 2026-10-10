@@ -310,7 +310,13 @@ private struct NowPlayingBar: View {
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 4)
-            control("backward.end.fill", label: "Previous song") { spotify.perform(.previous) }
+            if model.settings.music.autoMixEnabled {
+                let rating = model.music.currentRating
+                control("hand.thumbsdown", label: "Don't like: remove song and skip") { model.music.dislikeCurrentTrack() }
+                control(rating == .liked ? "hand.thumbsup.fill" : "hand.thumbsup",
+                        label: rating == .liked ? "Liked. Tap to undo" : "Like: play more often",
+                        tint: rating == .liked ? Theme.accent : nil) { model.music.toggleLikeCurrentTrack() }
+            }
             control("arrow.counterclockwise", label: "Play song again from the start") { spotify.perform(.restart) }
             control("forward.end.fill", label: "Next song") { spotify.perform(.next) }
         }
@@ -318,15 +324,16 @@ private struct NowPlayingBar: View {
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    private func control(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+    private func control(_ symbol: String, label: String, tint: Color? = nil, action: @escaping () -> Void) -> some View {
         Button {
             action()
             Haptics.tap()
         } label: {
             Image(systemName: symbol)
                 .font(.body.weight(.semibold))
+                .foregroundStyle(tint ?? .white)
                 .frame(width: 44, height: 44)
-                .background(Color.white.opacity(0.1), in: Circle())
+                .background((tint ?? .white).opacity(tint == nil ? 0.1 : 0.2), in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)

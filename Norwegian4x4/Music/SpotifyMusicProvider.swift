@@ -55,6 +55,7 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
     private(set) var nowPlaying: String? = nil
     private(set) var trackTitle: String? = nil
     private(set) var trackArtist: String? = nil
+    private(set) var trackURI: String? = nil
     private(set) var isPaused = true
     let kind: MusicProviderKind = .spotify
 
@@ -357,6 +358,7 @@ extension SpotifyMusicProvider: SPTAppRemoteDelegate, SPTAppRemotePlayerStateDel
         nowPlaying = "\(state.track.name) — \(state.track.artist.name)"
         trackTitle = state.track.name
         trackArtist = state.track.artist.name
+        trackURI = state.track.uri
         isPaused = state.isPaused
     }
 }

@@ -15,12 +15,14 @@ foreach ($line in Get-Content $In -Encoding utf8) {
     $genre, $artist, $title = $line.Split('|')
     $query = ($title -replace '\s*\(.*\)', '').Trim()
     $best = $null; $bestScore = -1
-    foreach ($page in 0..1) {
+    foreach ($page in 0..3) {
         try {
             $r = Invoke-RestMethod "https://api.reccobeats.com/v1/track/search?searchText=$([uri]::EscapeDataString($query))&size=50&page=$page" -Headers @{Accept='application/json'}
         } catch { Start-Sleep -Milliseconds 800; continue }
         foreach ($t in $r.content) {
-            if (-not ($t.artists | Where-Object { (Norm $_.name) -eq (Norm $artist) -or (Norm $_.name).Contains((Norm $artist)) -or (Norm $artist).Contains((Norm $_.name)) })) { continue }
+            # Exact artist only: non-Latin names normalise to "" and must never match.
+            $want = Norm $artist
+            if (-not $want -or -not ($t.artists | Where-Object { (Norm $_.name) -eq $want })) { continue }
             $nt = Norm $t.trackTitle; $nq = Norm $query
             if (-not $nt.StartsWith($nq)) { continue }
             $score = [int]($t.popularity) + ($(if ($nt -eq $nq) { 30 } else { 0 })) - ($(if ($t.trackTitle -match $bad) { 50 } else { 0 }))
@@ -37,7 +39,13 @@ foreach ($line in Get-Content $In -Encoding utf8) {
 $ids = $rows | Where-Object id | ForEach-Object id | Select-Object -Unique
 for ($i = 0; $i -lt $ids.Count; $i += 40) {
     $chunk = $ids[$i..([Math]::Min($i + 39, $ids.Count - 1))] -join ','
-    try { $f = Invoke-RestMethod "https://api.reccobeats.com/v1/audio-features?ids=$chunk" -Headers @{Accept='application/json'} } catch { continue }
+    $f = $null
+    foreach ($attempt in 1..5) {
+        # Retries on rate limiting (429) instead of silently losing the chunk.
+        try { $f = Invoke-RestMethod "https://api.reccobeats.com/v1/audio-features?ids=$chunk" -Headers @{Accept='application/json'}; break }
+        catch { Start-Sleep -Seconds (5 * $attempt) }
+    }
+    if (-not $f) { Write-Warning "No features for chunk starting at $i"; continue }
     foreach ($c in $f.content) {
         $sid = ($c.href -split '/')[-1]
         foreach ($row in $rows | Where-Object { $_.id -eq $sid }) { $row.tempo = [math]::Round($c.tempo, 1); $row.energy = [math]::Round($c.energy, 2) }
