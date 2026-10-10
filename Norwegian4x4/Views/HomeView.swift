@@ -102,7 +102,7 @@ struct HomeView: View {
         case .manual: return "Manual — use any music app"
         case .spotify:
             if prefs.autoMixEnabled, let mix = prefs.autoMix {
-                let genres = [mix.warmUp, mix.highIntensity, mix.recovery, mix.coolDown].map(\.genre.displayName)
+                let genres = [mix.warmUp, mix.highIntensity, mix.recovery, mix.coolDown].flatMap(\.allGenres).map(\.displayName)
                 return "Spotify · Genre mix: " + genres.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: ", ")
             }
             return "Spotify · \(model.music.spotify.status.label)"

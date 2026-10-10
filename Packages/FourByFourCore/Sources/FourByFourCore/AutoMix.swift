@@ -8,7 +8,7 @@ import Foundation
 // networking lives in the app target.
 
 public enum MusicGenre: String, Codable, CaseIterable, Sendable, Identifiable {
-    case pop, dance, edm, house, techno, drumAndBass, hipHop, germanRap, rnb, rock, metal, punk, indie, latin, eighties, nineties, chill, acoustic
+    case pop, dance, edm, house, techno, trance, drumAndBass, hipHop, germanRap, rnb, rock, hardRock, metal, punk, indie, latin, eighties, nineties, chill, acoustic
 
     public var id: String { rawValue }
 
@@ -19,13 +19,15 @@ public enum MusicGenre: String, Codable, CaseIterable, Sendable, Identifiable {
         case .edm: return "EDM"
         case .house: return "House"
         case .techno: return "Techno"
+        case .trance: return "Trance"
         case .drumAndBass: return "Drum & Bass"
         case .hipHop: return "Hip-Hop"
         case .germanRap: return "Deutschrap"
         case .rnb: return "R&B"
         case .rock: return "Rock"
+        case .hardRock: return "Hard Rock"
         case .metal: return "Metal"
-        case .punk: return "Punk"
+        case .punk: return "Punk Rock"
         case .indie: return "Indie"
         case .latin: return "Latin"
         case .eighties: return "80s"
@@ -44,11 +46,13 @@ public enum MusicGenre: String, Codable, CaseIterable, Sendable, Identifiable {
         case .edm: return ["genre:\"edm\"", "edm"]
         case .house: return ["genre:\"house\"", "house music"]
         case .techno: return ["genre:\"techno\"", "techno"]
+        case .trance: return ["genre:\"trance\"", "trance"]
         case .drumAndBass: return ["genre:\"drum and bass\"", "drum and bass"]
         case .hipHop: return ["genre:\"hip hop\"", "hip hop"]
         case .germanRap: return ["genre:\"german hip hop\"", "deutschrap"]
         case .rnb: return ["genre:\"r&b\"", "r&b"]
         case .rock: return ["genre:\"rock\"", "rock"]
+        case .hardRock: return ["genre:\"hard rock\"", "hard rock"]
         case .metal: return ["genre:\"metal\"", "metal"]
         case .punk: return ["genre:\"punk\"", "punk rock"]
         case .indie: return ["genre:\"indie\"", "indie"]
@@ -103,12 +107,28 @@ public struct TempoProfile: Codable, Equatable, Sendable {
 }
 
 public struct AutoMixSlot: Codable, Equatable, Sendable {
+    /// First / only genre (kept for settings saved by older versions).
     public var genre: MusicGenre
+    /// All genres for this phase; nil = just `genre`.
+    public var genres: [MusicGenre]?
     public var tempo: TempoProfile
 
-    public init(genre: MusicGenre, tempo: TempoProfile) {
+    public init(genre: MusicGenre, genres: [MusicGenre]? = nil, tempo: TempoProfile) {
         self.genre = genre
+        self.genres = genres
         self.tempo = tempo
+    }
+
+    public var allGenres: [MusicGenre] {
+        let list = genres ?? [genre]
+        return list.isEmpty ? [genre] : list
+    }
+
+    /// Sets the genre list; `genre` follows the first entry.
+    public mutating func setGenres(_ list: [MusicGenre]) {
+        guard let first = list.first else { return }
+        genre = first
+        genres = list
     }
 }
 
@@ -189,6 +209,34 @@ public struct AudioFeatures: Equatable, Sendable {
     }
 }
 
+/// A hand-picked track with its Spotify ID and checked tempo / energy.
+public struct CuratedTrack: Equatable, Sendable {
+    public var id: String
+    public var title: String
+    public var artist: String
+    public var tempo: Double
+    public var energy: Double
+
+    public var candidate: TrackCandidate {
+        TrackCandidate(id: id, uri: "spotify:track:\(id)", name: title, artist: artist)
+    }
+}
+
+/// Researched song lists per phase and genre (see CuratedCatalog+Data.swift).
+/// Preferred over search because every track is known to fit the phase.
+public enum CuratedCatalog {
+    public static func tracks(for slot: MusicSlot, genre: MusicGenre) -> [CuratedTrack] {
+        switch slot {
+        case .highIntensity: return highIntensity[genre] ?? []
+        case .warmUp, .recovery, .coolDown: return []
+        }
+    }
+
+    public static func hasTracks(for slot: MusicSlot, genre: MusicGenre) -> Bool {
+        !tracks(for: slot, genre: genre).isEmpty
+    }
+}
+
 public enum TrackPicker {
     /// Most tracks allowed from one artist in a phase playlist.
     public static let maxPerArtist = 2
@@ -222,6 +270,31 @@ public enum TrackPicker {
             guard perArtist[key, default: 0] < maxPerArtist else { continue }
             perArtist[key, default: 0] += 1
             picked.append(track)
+        }
+        return picked
+    }
+
+    /// Takes tracks from several lists in turn (each shuffled), so a phase
+    /// with several genres gets an even mix. Skips `excluded` IDs and keeps
+    /// the per-artist limit.
+    public static func pickRoundRobin<R: RandomNumberGenerator>(from lists: [[TrackCandidate]], count: Int, excluding excluded: Set<String> = [],
+                                                                using rng: inout R) -> [TrackCandidate] {
+        var queues = lists.map { $0.filter { !excluded.contains($0.id) }.shuffled(using: &rng) }
+        var picked: [TrackCandidate] = []
+        var seen = excluded
+        var perArtist: [String: Int] = [:]
+        while picked.count < count, queues.contains(where: { !$0.isEmpty }) {
+            for index in queues.indices where picked.count < count {
+                while let track = queues[index].first {
+                    queues[index].removeFirst()
+                    let key = track.artist.lowercased()
+                    guard !seen.contains(track.id), perArtist[key, default: 0] < maxPerArtist else { continue }
+                    seen.insert(track.id)
+                    perArtist[key, default: 0] += 1
+                    picked.append(track)
+                    break
+                }
+            }
         }
         return picked
     }

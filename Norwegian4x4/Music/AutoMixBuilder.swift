@@ -71,35 +71,48 @@ final class AutoMixBuilder {
         // Named in error messages so a failure says which Spotify call broke.
         var step = "Search"
         do {
-            // 1. Candidates per genre (each genre fetched once even if several phases use it).
+            // 1. Search only genres without a curated list for that phase
+            //    (each genre fetched once even if several phases use it).
+            var searchGenres = Set<MusicGenre>()
+            for slot in MusicSlot.allCases {
+                for genre in settings[slot].allGenres where !CuratedCatalog.hasTracks(for: slot, genre: genre) {
+                    searchGenres.insert(genre)
+                }
+            }
             var candidates: [MusicGenre: [TrackCandidate]] = [:]
-            for genre in Set(MusicSlot.allCases.map { settings[$0].genre }).sorted(by: { $0.rawValue < $1.rawValue }) {
+            for genre in searchGenres.sorted(by: { $0.rawValue < $1.rawValue }) {
                 state = .building("Searching \(genre.displayName)…")
                 candidates[genre] = try await fetchCandidates(for: genre, using: spotify)
             }
 
-            // 2. Tempo and energy.
+            // 2. Tempo and energy for searched tracks (curated ones are pre-checked).
             step = "Tempo lookup"
-            state = .building("Checking tempo…")
-            let allIDs = candidates.values.flatMap { $0.map(\.id) }
-            let features = await ReccoBeatsAPI().features(for: allIDs)
-            guard !features.isEmpty else {
-                state = .failed("Tempo data unavailable (ReccoBeats). Using the previous mix.")
-                return
+            var features: [String: AudioFeatures] = [:]
+            if !candidates.isEmpty {
+                state = .building("Checking tempo…")
+                features = await ReccoBeatsAPI().features(for: candidates.values.flatMap { $0.map(\.id) })
+                if features.isEmpty { log.error("ReccoBeats returned no data; only curated lists are used") }
             }
 
             // 3. Pick per phase. Hardest phase first; a track is used only once.
+            //    Curated tracks first (genres mixed evenly), search results fill up.
             var rng = SystemRandomNumberGenerator()
             var used = Set<String>()
             var picks: [MusicSlot: [TrackCandidate]] = [:]
             for slot in [MusicSlot.highIntensity, .recovery, .warmUp, .coolDown] {
                 let slotSettings = settings[slot]
-                let pool = (candidates[slotSettings.genre] ?? []).filter { !used.contains($0.id) }
-                let picked = TrackPicker.pick(from: pool, features: features, profile: slotSettings.tempo,
-                                              count: AutoMixSettings.trackCount(for: slot), using: &rng)
+                let count = AutoMixSettings.trackCount(for: slot)
+                let curated = slotSettings.allGenres.map { CuratedCatalog.tracks(for: slot, genre: $0).map(\.candidate) }.filter { !$0.isEmpty }
+                var picked = TrackPicker.pickRoundRobin(from: curated, count: count, excluding: used, using: &rng)
+                if picked.count < count {
+                    let taken = used.union(picked.map(\.id))
+                    let pool = slotSettings.allGenres.flatMap { candidates[$0] ?? [] }.filter { !taken.contains($0.id) }
+                    picked += TrackPicker.pick(from: pool, features: features, profile: slotSettings.tempo,
+                                               count: count - picked.count, using: &rng)
+                }
                 picked.forEach { used.insert($0.id) }
                 picks[slot] = picked
-                log.info("\(slot.rawValue, privacy: .public): \(picked.count) of \(pool.count) tracks fit")
+                log.info("\(slot.rawValue, privacy: .public): \(picked.count) tracks")
             }
 
             // 4. Write playlists.
@@ -111,7 +124,7 @@ final class AutoMixBuilder {
                 let tracks = picks[slot] ?? []
                 guard tracks.count >= Self.minimumTracks else { missing.append(slot); continue }
                 let id = try await writePlaylist(for: slot, genre: settings[slot].genre, uris: tracks.map(\.uri), using: spotify)
-                built[slot] = MusicSelection(title: "\(settings[slot].genre.displayName) mix",
+                built[slot] = MusicSelection(title: Self.mixTitle(settings[slot].allGenres),
                                              uri: "spotify:playlist:\(id)", trackCount: tracks.count)
             }
 
@@ -130,6 +143,17 @@ final class AutoMixBuilder {
             state = .failed("\(step) failed. \(error.message)")
         } catch {
             state = .failed("\(step) failed. \(error.localizedDescription)")
+        }
+    }
+
+    /// Used in spoken prompts and the UI: "EDM mix", "EDM & Trance mix", "EDM + 4 more".
+    static func mixTitle(_ genres: [MusicGenre]) -> String {
+        let names = genres.map(\.displayName)
+        switch names.count {
+        case 0: return "Mix"
+        case 1: return "\(names[0]) mix"
+        case 2: return "\(names[0]) & \(names[1]) mix"
+        default: return "\(names[0]) + \(names.count - 1) more"
         }
     }
 

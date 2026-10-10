@@ -34,7 +34,7 @@ struct MusicSettingsView: View {
                         NavigationLink {
                             AutoMixSlotEditor(slot: slot)
                         } label: {
-                            LabeledContent(slot.displayName, value: "\(mix[slot].genre.displayName) · \(mix[slot].tempo.bpm.label) BPM")
+                            LabeledContent(slot.displayName, value: mix[slot].allGenres.map(\.displayName).joined(separator: ", "))
                         }
                     }
                     AutoMixStatusView()
@@ -200,13 +200,32 @@ struct AutoMixSlotEditor: View {
         let standard = TempoProfile.standard(for: slot)
         Form {
             Section {
-                Picker("Genre", selection: binding(\.genre)) {
-                    ForEach(MusicGenre.allCases) { Text($0.displayName).tag($0) }
+                ForEach(MusicGenre.allCases) { genre in
+                    Button {
+                        toggle(genre)
+                    } label: {
+                        HStack {
+                            Text(genre.displayName).foregroundStyle(.primary)
+                            if CuratedCatalog.hasTracks(for: slot, genre: genre) {
+                                Label("Hand-picked", systemImage: "star.fill")
+                                    .labelStyle(.iconOnly)
+                                    .font(.caption)
+                                    .foregroundStyle(.yellow)
+                            }
+                            Spacer()
+                            if selectedGenres.contains(genre) {
+                                Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.accent)
+                            }
+                        }
+                    }
+                    .accessibilityAddTraits(selectedGenres.contains(genre) ? .isSelected : [])
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
             } header: {
-                Text("Genre")
+                Text("Genres")
+            } footer: {
+                Text(hasCuratedGenres
+                     ? "Pick one or more; the playlist mixes them evenly. ★ = researched song list for this phase, every song checked for tempo and energy. Other genres are found by search."
+                     : "Pick one or more; the playlist mixes them evenly.")
             }
             Section {
                 Stepper("From \(tempo.bpm.lower) BPM", value: binding(\.tempo.bpm.lower), in: 50...max(50, tempo.bpm.upper - 5), step: 5)
@@ -226,6 +245,24 @@ struct AutoMixSlotEditor: View {
     }
 
     private var tempo: TempoProfile { model.settings.music.autoMix?[slot].tempo ?? .standard(for: slot) }
+
+    private var selectedGenres: [MusicGenre] { (model.settings.music.autoMix ?? AutoMixSettings())[slot].allGenres }
+
+    private var hasCuratedGenres: Bool { MusicGenre.allCases.contains { CuratedCatalog.hasTracks(for: slot, genre: $0) } }
+
+    /// At least one genre always stays selected.
+    private func toggle(_ genre: MusicGenre) {
+        var list = selectedGenres
+        if let index = list.firstIndex(of: genre) {
+            guard list.count > 1 else { return }
+            list.remove(at: index)
+        } else {
+            list.append(genre)
+        }
+        var mix = model.settings.music.autoMix ?? AutoMixSettings()
+        mix[slot].setGenres(list)
+        model.settings.music.autoMix = mix
+    }
 
     private func binding<Value>(_ path: WritableKeyPath<AutoMixSlot, Value>) -> Binding<Value> {
         Binding {

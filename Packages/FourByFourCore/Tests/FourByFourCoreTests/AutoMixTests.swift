@@ -142,6 +142,44 @@ final class AutoMixTests: XCTestCase {
         XCTAssertTrue(decoded.autoMixEnabled)
     }
 
+    // MARK: Curated lists
+
+    func testCuratedIntervalListsAreUsable() {
+        for genre in [MusicGenre.edm, .drumAndBass, .trance, .hardRock, .punk] {
+            let tracks = CuratedCatalog.tracks(for: .highIntensity, genre: genre)
+            XCTAssertGreaterThanOrEqual(tracks.count, 20, genre.rawValue)
+            for track in tracks {
+                XCTAssertEqual(track.id.count, 22, "Spotify IDs are 22 characters: \(track.title)")
+                XCTAssertGreaterThanOrEqual(track.energy, 0.75, track.title)
+            }
+            XCTAssertEqual(Set(tracks.map(\.id)).count, tracks.count, "no duplicates in \(genre.rawValue)")
+        }
+        XCTAssertTrue(CuratedCatalog.tracks(for: .coolDown, genre: .edm).isEmpty)
+        XCTAssertFalse(CuratedCatalog.hasTracks(for: .highIntensity, genre: .chill))
+    }
+
+    func testRoundRobinMixesGenresEvenly() {
+        let a = (0..<10).map { track("a\($0)") }, b = (0..<10).map { track("b\($0)") }, c = (0..<2).map { track("c\($0)") }
+        var rng = SeededGenerator(state: 5)
+        let picked = TrackPicker.pickRoundRobin(from: [a, b, c], count: 9, excluding: ["a1"], using: &rng)
+        XCTAssertEqual(picked.count, 9)
+        XCTAssertEqual(picked.filter { $0.id.hasPrefix("c") }.count, 2, "short list is used up")
+        XCTAssertGreaterThanOrEqual(picked.filter { $0.id.hasPrefix("a") }.count, 3)
+        XCTAssertGreaterThanOrEqual(picked.filter { $0.id.hasPrefix("b") }.count, 3)
+        XCTAssertFalse(picked.contains { $0.id == "a1" })
+    }
+
+    func testOldSlotWithoutGenreListDecodes() throws {
+        let json = #"{"genre":"edm","tempo":{"bpm":{"lower":145,"upper":175},"minEnergy":0.75,"maxEnergy":1}}"#
+        var slot = try JSONDecoder().decode(AutoMixSlot.self, from: Data(json.utf8))
+        XCTAssertEqual(slot.allGenres, [.edm])
+        slot.setGenres([.trance, .punk])
+        XCTAssertEqual(slot.genre, .trance)
+        XCTAssertEqual(slot.allGenres, [.trance, .punk])
+        slot.setGenres([])
+        XCTAssertEqual(slot.allGenres, [.trance, .punk], "an empty selection is ignored")
+    }
+
     func testEveryGenreHasQueries() {
         for genre in MusicGenre.allCases {
             XCTAssertFalse(genre.searchQueries.isEmpty, genre.rawValue)

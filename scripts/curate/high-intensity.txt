@@ -1,0 +1,192 @@
+# genre|artist|title
+edm|Avicii|Levels
+edm|Swedish House Mafia|Don't You Worry Child
+edm|Swedish House Mafia|Greyhound
+edm|Martin Garrix|Animals
+edm|Martin Garrix|Tremor
+edm|Hardwell|Spaceman
+edm|Hardwell|Apollo
+edm|Calvin Harris|Summer
+edm|Calvin Harris|Feel So Close
+edm|Calvin Harris|Outside
+edm|David Guetta|Titanium
+edm|David Guetta|She Wolf (Falling to Pieces)
+edm|Zedd|Clarity
+edm|Zedd|Spectrum
+edm|Alesso|Heroes (we could be)
+edm|Tiësto|Red Lights
+edm|Afrojack|Take Over Control
+edm|Showtek|Booyah
+edm|Dimitri Vegas & Like Mike|Mammoth
+edm|W&W|Bigfoot
+edm|Nicky Romero|Toulouse
+edm|Avicii|The Nights
+edm|Avicii|Wake Me Up
+edm|Skrillex|Bangarang
+edm|Knife Party|Bonfire
+edm|The Chainsmokers|Don't Let Me Down
+edm|Marshmello|Alone
+edm|deadmau5|Ghosts 'n' Stuff
+edm|Eric Prydz|Pjanoo
+edm|Krewella|Alive
+edm|Porter Robinson|Language
+edm|Madeon|The City
+edm|Steve Aoki|Delirious (Boneless)
+edm|Swedish House Mafia|Save The World
+edm|Axwell /\ Ingrosso|Sun Is Shining
+edm|Martin Garrix|Virus (How About Now)
+edm|KSHMR|Jammin
+edm|Dimitri Vegas & Like Mike|Tremor
+dnb|Pendulum|Watercolour
+dnb|Pendulum|Propane Nightmares
+dnb|Pendulum|Slam
+dnb|Pendulum|Tarantula
+dnb|Pendulum|Hold Your Colour
+dnb|Pendulum|Witchcraft
+dnb|Chase & Status|Blind Faith
+dnb|Chase & Status|Baddadan
+dnb|Chase & Status|No Problem
+dnb|Sub Focus|Tidal Wave
+dnb|Sub Focus|Endorphins
+dnb|Sub Focus|Out The Blue
+dnb|Netsky|Come Alive
+dnb|Netsky|Memory Lane
+dnb|Wilkinson|Afterglow
+dnb|Wilkinson|Take You Higher
+dnb|Rudimental|Feel The Love
+dnb|Rudimental|Waiting All Night
+dnb|DJ Fresh|Louder
+dnb|DJ Fresh|Hot Right Now
+dnb|Shy FX|Original Nuttah
+dnb|Andy C|Heartbeat Loud
+dnb|Dimension|Desire
+dnb|Dimension|Offender
+dnb|Culture Shock|Bunker
+dnb|Hybrid Minds|Paradise
+dnb|High Contrast|If We Ever
+dnb|Camo & Krooked|Move Around
+dnb|Metrik|Gravity
+dnb|Sigma|Nobody To Love
+dnb|Sigma|Changing
+dnb|Delta Heavy|Ghost
+dnb|Bou|Closer
+dnb|Netsky|Rio
+dnb|Sub Focus|Rock It
+dnb|Chase & Status|Eastern Jam
+dnb|Wilkinson|Too Close
+trance|Darude|Sandstorm
+trance|ATB|9 PM (Till I Come)
+trance|Paul van Dyk|For An Angel
+trance|Armin van Buuren|This Is What It Feels Like
+trance|Armin van Buuren|Blah Blah Blah
+trance|Armin van Buuren|In and Out of Love
+trance|Armin van Buuren|Shivers
+trance|Tiësto|Adagio For Strings
+trance|Tiësto|Traffic
+trance|Above & Beyond|Sun & Moon
+trance|Above & Beyond|Thing Called Love
+trance|Gareth Emery|Concrete Angel
+trance|Alice Deejay|Better Off Alone
+trance|Sash!|Ecuador
+trance|Robert Miles|Children
+trance|Energy 52|Café Del Mar
+trance|Binary Finary|1998
+trance|Chicane|Saltwater
+trance|Cosmic Gate|Exploration of Space
+trance|Paul Oakenfold|Ready Steady Go
+trance|Gouryella|Gouryella
+trance|Rank 1|Airwave
+trance|Vini Vici|Great Spirit
+trance|Infected Mushroom|Becoming Insane
+trance|Astrix|Deep Jungle Walk
+trance|Faithless|Insomnia
+trance|Kai Tracid|Life Is Too Short
+trance|Push|Universal Nation
+trance|Delerium|Silence
+trance|Lasgo|Something
+trance|Ian Van Dahl|Castles In The Sky
+trance|System F|Out Of The Blue
+trance|DJ Sammy|Heaven
+trance|Cascada|Everytime We Touch
+trance|Vengaboys|We Like to Party! (The Vengabus)
+trance|Scooter|How Much Is The Fish?
+trance|Scooter|Maria (I Like It Loud)
+hardrock|AC/DC|Thunderstruck
+hardrock|AC/DC|T.N.T.
+hardrock|AC/DC|Back In Black
+hardrock|Guns N' Roses|Welcome To The Jungle
+hardrock|Guns N' Roses|Paradise City
+hardrock|Metallica|Enter Sandman
+hardrock|Metallica|Master of Puppets
+hardrock|Iron Maiden|The Trooper
+hardrock|Iron Maiden|Run to the Hills
+hardrock|Iron Maiden|Aces High
+hardrock|Mötley Crüe|Kickstart My Heart
+hardrock|Van Halen|Hot For Teacher
+hardrock|Van Halen|Panama
+hardrock|Rammstein|Du hast
+hardrock|Rammstein|Sonne
+hardrock|Foo Fighters|The Pretender
+hardrock|Foo Fighters|Everlong
+hardrock|Foo Fighters|All My Life
+hardrock|Audioslave|Cochise
+hardrock|Rage Against The Machine|Killing In the Name
+hardrock|Queens of the Stone Age|No One Knows
+hardrock|System Of A Down|Chop Suey!
+hardrock|System Of A Down|Toxicity
+hardrock|Linkin Park|Faint
+hardrock|Linkin Park|Bleed It Out
+hardrock|Papa Roach|Last Resort
+hardrock|Disturbed|Down with the Sickness
+hardrock|Motörhead|Ace Of Spades
+hardrock|KISS|Rock And Roll All Nite
+hardrock|Airbourne|Runnin' Wild
+hardrock|Wolfmother|Woman
+hardrock|Volbeat|Still Counting
+hardrock|Muse|Knights Of Cydonia
+hardrock|Muse|Hysteria
+hardrock|Royal Blood|Figure It Out
+hardrock|Black Sabbath|Paranoid
+hardrock|Deep Purple|Highway Star
+hardrock|Scorpions|Rock You Like A Hurricane
+hardrock|Judas Priest|Painkiller
+hardrock|Bon Jovi|Livin' On A Prayer
+punk|The Offspring|All I Want
+punk|The Offspring|Pretty Fly (For A White Guy)
+punk|The Offspring|Come Out and Play
+punk|The Offspring|The Kids Aren't Alright
+punk|Green Day|Basket Case
+punk|Green Day|American Idiot
+punk|Green Day|Holiday
+punk|Green Day|Longview
+punk|blink-182|All The Small Things
+punk|blink-182|What's My Age Again?
+punk|blink-182|The Rock Show
+punk|Sum 41|Fat Lip
+punk|Sum 41|In Too Deep
+punk|Sum 41|Still Waiting
+punk|Ramones|Blitzkrieg Bop
+punk|Ramones|I Wanna Be Sedated
+punk|The Clash|London Calling
+punk|Sex Pistols|Anarchy In The U.K.
+punk|Rise Against|Savior
+punk|Rise Against|Give It All
+punk|Rancid|Ruby Soho
+punk|NOFX|Linoleum
+punk|Billy Talent|Red Flag
+punk|Billy Talent|Try Honesty
+punk|Billy Talent|Fallen Leaves
+punk|Die Ärzte|Schrei nach Liebe
+punk|Die Toten Hosen|Hier kommt Alex
+punk|Die Toten Hosen|Tage wie diese
+punk|My Chemical Romance|I'm Not Okay (I Promise)
+punk|Paramore|Misery Business
+punk|Good Charlotte|The Anthem
+punk|Jimmy Eat World|The Middle
+punk|Dropkick Murphys|I'm Shipping Up To Boston
+punk|Bad Religion|Punk Rock Song
+punk|Millencolin|No Cigar
+punk|Pennywise|Bro Hymn
+punk|Simple Plan|I'm Just a Kid
+punk|The Offspring|Want You Bad
+punk|Bad Religion|21st Century (Digital Boy)
