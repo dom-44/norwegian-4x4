@@ -88,6 +88,8 @@ struct HomeView: View {
             Text("\(Format.minutes(model.settings.workout.makePlan().totalDuration)) · \(model.settings.workout.intervalCount) × \(Format.minutes(model.settings.workout.interval)) at 85–95% HRmax")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
+            PhaseTimeline(phases: model.settings.workout.makePlan().phases, currentIndex: -1, phaseFraction: 0, height: 8)
+                .padding(.top, 6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 12)

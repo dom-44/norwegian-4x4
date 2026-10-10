@@ -70,15 +70,16 @@ struct WorkoutSummaryView: View {
         VStack(spacing: 14) {
             HStack {
                 StatTile(title: "Duration", value: Format.clock(summary.activeDuration), systemImage: "timer")
-                StatTile(title: "Time in target", value: Format.clock(summary.timeInTarget), systemImage: "scope")
+                StatTile(title: "In target", value: Format.clock(summary.timeInTarget),
+                         unit: Format.percent(summary.timeInTargetFraction), systemImage: "scope")
             }
             HStack {
                 StatTile(title: "Average", value: summary.averageBPM.map(String.init) ?? "—", unit: "bpm", systemImage: "heart")
                 StatTile(title: "Maximum", value: summary.maxBPM.map(String.init) ?? "—", unit: "bpm", systemImage: "heart.fill")
             }
             HStack {
-                StatTile(title: "Target share", value: Format.percent(summary.timeInTargetFraction), systemImage: "chart.pie")
                 StatTile(title: "Interval avg", value: WorkoutStatisticsDisplay.intervalAverage(summary), unit: "bpm", systemImage: "bolt.heart")
+                StatTile(title: "Recovery drop", value: WorkoutStatisticsDisplay.recoveryDrop(summary), unit: "bpm / 60 s", systemImage: "arrow.down.heart")
             }
         }
         .card()
@@ -167,5 +168,12 @@ enum WorkoutStatisticsDisplay {
         let values = summary.intervals.compactMap(\.averageBPM)
         guard !values.isEmpty else { return "—" }
         return String(Int((Double(values.reduce(0, +)) / Double(values.count)).rounded()))
+    }
+
+    /// Average heart-rate drop in the first minute of the recoveries.
+    static func recoveryDrop(_ summary: WorkoutSummary) -> String {
+        let drops = summary.phases.filter { $0.kind == .recovery }.compactMap(\.recoveryDrop60s)
+        guard !drops.isEmpty else { return "—" }
+        return "−" + String(Int((Double(drops.reduce(0, +)) / Double(drops.count)).rounded()))
     }
 }

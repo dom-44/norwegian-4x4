@@ -44,7 +44,9 @@ struct ActiveWorkoutView: View {
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.snappy, value: Int(progress.preparationRemaining.rounded(.up)))
             if let phase = progress.phase {
-                Text("First: \(phase.name) · \(Format.clock(phase.duration))").font(.title3)
+                Text("First: \(phase.name) · \(Format.clock(phase.duration))")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Theme.color(for: phase.kind))
             }
             Spacer()
             Button("Cancel", role: .cancel) { workout.end(save: false) }
@@ -161,7 +163,11 @@ struct ActiveWorkoutView: View {
                 Text(targetLine).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.secondaryText)
             }
             Spacer()
-            ZoneBadge(zone: workout.zone, large: true)
+            // Warm-up / cool-down have no target: no badge rather than a
+            // meaningless "No target zone".
+            if workout.zone != .noTarget {
+                ZoneBadge(zone: workout.zone, large: true)
+            }
         }
         .card()
     }

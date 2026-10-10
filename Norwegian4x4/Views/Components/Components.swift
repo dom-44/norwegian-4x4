@@ -52,6 +52,8 @@ struct ZoneBadge: View {
             .foregroundStyle(Theme.color(for: zone))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
+            .lineLimit(1)
+            .fixedSize()
             .background(Theme.color(for: zone).opacity(0.15), in: Capsule())
             .accessibilityLabel("Heart rate zone: \(Theme.label(for: zone))")
     }
@@ -128,7 +130,7 @@ struct PhaseTimeline: View {
                     let width = total > 0 ? available * CGFloat(phase.duration / total) : 0
                     let fill = phase.id < currentIndex ? 1 : (phase.id == currentIndex ? min(1, max(0, phaseFraction)) : 0)
                     ZStack(alignment: .leading) {
-                        Rectangle().fill(Theme.color(for: phase.kind).opacity(0.22))
+                        Rectangle().fill(Theme.color(for: phase.kind).opacity(0.38))
                         Rectangle().fill(Theme.color(for: phase.kind)).frame(width: width * CGFloat(fill))
                     }
                     .frame(width: width)

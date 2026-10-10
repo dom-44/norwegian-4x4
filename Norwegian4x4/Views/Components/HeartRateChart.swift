@@ -44,12 +44,26 @@ struct HeartRateChart: View {
         }
     }
 
+    private var phaseSpans: [Band] {
+        plan.phases.compactMap { phase in
+            let ts = samples.filter { $0.phaseIndex == phase.id }.map(\.t)
+            guard let lo = ts.min(), let hi = ts.max(), hi > lo else { return nil }
+            return Band(id: phase.id, start: lo / 60, end: hi / 60, range: BPMRange(lower: 0, upper: 0), kind: phase.kind)
+        }
+    }
+
     var body: some View {
         if samples.isEmpty {
             ContentUnavailableView("No heart rate data", systemImage: "heart.slash", description: Text("Connect a heart rate sensor before your next workout."))
                 .frame(height: 200)
         } else {
             Chart {
+                // Faint full-height background per phase, so you can see which
+                // part of the curve was warm-up, interval, recovery, cool-down.
+                ForEach(phaseSpans) { band in
+                    RectangleMark(xStart: .value("Start", band.start), xEnd: .value("End", band.end))
+                        .foregroundStyle(Theme.color(for: band.kind).opacity(0.07))
+                }
                 ForEach(bands) { band in
                     RectangleMark(
                         xStart: .value("Start", band.start),
@@ -71,7 +85,14 @@ struct HeartRateChart: View {
                 }
             }
             .chartYScale(domain: yDomain)
-            .chartXAxisLabel("Minutes")
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let minute = value.as(Double.self) { Text(Format.clock(minute * 60)) }
+                    }
+                }
+            }
             .chartYAxisLabel("bpm")
             .frame(height: 220)
             .accessibilityLabel("Heart rate graph")
