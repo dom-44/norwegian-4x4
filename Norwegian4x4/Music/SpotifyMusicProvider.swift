@@ -207,7 +207,7 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
         guard let player = appRemote?.playerAPI else { throw MusicProviderError.notConnected }
         if let index = selection.startIndex, index > 0, let item = await contentItem(for: selection.uri) {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                player.playItem(item, skipToTrackIndex: index) { _, error in
+                player.play(item, skipToTrackIndex: index) { _, error in
                     if let error {
                         continuation.resume(throwing: MusicProviderError.commandFailed(error.localizedDescription))
                     } else {
