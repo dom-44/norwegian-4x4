@@ -68,6 +68,8 @@ final class AutoMixBuilder {
     func build(settings: AutoMixSettings, token: String) async {
         guard !isBuilding else { return }
         let spotify = SpotifyWebAPI(token: token)
+        // Named in error messages so a failure says which Spotify call broke.
+        var step = "Search"
         do {
             // 1. Candidates per genre (each genre fetched once even if several phases use it).
             var candidates: [MusicGenre: [TrackCandidate]] = [:]
@@ -77,6 +79,7 @@ final class AutoMixBuilder {
             }
 
             // 2. Tempo and energy.
+            step = "Tempo lookup"
             state = .building("Checking tempo…")
             let allIDs = candidates.values.flatMap { $0.map(\.id) }
             let features = await ReccoBeatsAPI().features(for: allIDs)
@@ -100,6 +103,7 @@ final class AutoMixBuilder {
             }
 
             // 4. Write playlists.
+            step = "Writing playlists"
             state = .building("Writing playlists…")
             var built = selections
             var missing: [MusicSlot] = []
@@ -122,9 +126,10 @@ final class AutoMixBuilder {
         } catch WebAPIError.needsAuthorization {
             state = .needsAuthorization
         } catch let error as WebAPIError {
-            state = .failed(error.message)
+            log.error("\(step, privacy: .public) failed: \(error.message, privacy: .public)")
+            state = .failed("\(step) failed. \(error.message)")
         } catch {
-            state = .failed(error.localizedDescription)
+            state = .failed("\(step) failed. \(error.localizedDescription)")
         }
     }
 
@@ -160,7 +165,7 @@ final class AutoMixBuilder {
             do {
                 try await spotify.replaceItems(playlistID: existing, uris: uris)
                 return existing
-            } catch WebAPIError.http(404) {
+            } catch WebAPIError.http(404, _) {
                 defaults.removeObject(forKey: key) // deleted in Spotify; create a new one
             }
         }

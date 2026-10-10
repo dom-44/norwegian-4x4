@@ -2,17 +2,18 @@ import FourByFourCore
 import Foundation
 
 enum WebAPIError: Error, Equatable {
-    /// Token missing, expired (~1 h) or without the playlist scopes.
+    /// 401: token missing or expired (~1 h).
     case needsAuthorization
     case rateLimited
-    case http(Int)
+    /// Any other failure, with the server's own error message if it sent one.
+    case http(Int, String)
     case network(String)
 
     var message: String {
         switch self {
         case .needsAuthorization: return "Spotify needs to be connected again."
         case .rateLimited: return "Too many requests. Try again in a minute."
-        case .http(let code): return "Server error (\(code))."
+        case .http(let code, let detail): return detail.isEmpty ? "Error \(code)." : "Error \(code): \(detail)"
         case .network(let reason): return reason
         }
     }
@@ -108,9 +109,19 @@ enum HTTP {
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch status {
         case 200..<300: return data
-        case 401, 403: throw WebAPIError.needsAuthorization
+        case 401: throw WebAPIError.needsAuthorization
         case 429: throw WebAPIError.rateLimited
-        default: throw WebAPIError.http(status)
+        default: throw WebAPIError.http(status, errorMessage(in: data))
         }
+    }
+
+    /// Spotify sends {"error":{"status":403,"message":"…"}}; anything else is
+    /// shown as (shortened) plain text.
+    static func errorMessage(in data: Data) -> String {
+        struct SpotifyError: Decodable { struct Inner: Decodable { var message: String? }; var error: Inner }
+        if let parsed = try? JSONDecoder().decode(SpotifyError.self, from: data), let message = parsed.error.message {
+            return message
+        }
+        return String(decoding: data.prefix(200), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
