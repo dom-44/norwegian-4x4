@@ -254,10 +254,12 @@ songs*) the app:
    refilled; deleting them is harmless.
 
 Repeated intervals start two tracks further into the interval playlist, so
-each interval begins with a new song. The mix needs the extra scopes
-`playlist-modify-private` and `playlist-read-private`: after updating, tap
-*Connect Spotify* once. Tokens last ~1 h, so the mix is built right after
-connecting. If anything fails (no network, ReccoBeats down, too few fitting
+each interval begins with a new song. The App Remote token only allows remote
+control (the Web API answers "Insufficient client scope"), so the mix signs in
+separately: *Sign in to Spotify* opens Spotify's web login (Authorization Code
+with PKCE, no client secret, scopes `playlist-modify-private` and
+`playlist-read-private`). The refresh token is kept in the Keychain, so this is
+needed only once. If anything fails (no network, ReccoBeats down, too few fitting
 songs) the previous mix or your own links are used; the workout is never
 affected. Pure logic (`AutoMix.swift`) is unit-tested; the network calls are
 not.

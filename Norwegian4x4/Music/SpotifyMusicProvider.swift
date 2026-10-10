@@ -58,15 +58,7 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
 
     @ObservationIgnored private let log = Logger(subsystem: "Norwegian4x4", category: "Spotify")
     private static let tokenKey = "spotify.accessToken"
-    private static let tokenIssuedKey = "spotify.tokenIssuedAt"
-    private static let tokenScopesKey = "spotify.tokenScopes"
-    /// Scopes beyond `app-remote-control`, for the auto mix (search needs none).
-    private static let additionalScopes = ["playlist-modify-private", "playlist-read-private"]
-    /// App Remote tokens last about an hour.
-    private static let tokenLifetime: TimeInterval = 55 * 60
     @ObservationIgnored private var connectWaiters: [CheckedContinuation<Void, Error>] = []
-    /// Called after a successful authorization (a fresh token is available).
-    @ObservationIgnored var onAuthorized: (@MainActor () -> Void)?
     /// Spotify always starts playback when authorizing; set when the user
     /// only wanted to connect, so playback is paused once connected.
     @ObservationIgnored private var pauseRequestedAt: Date?
@@ -119,16 +111,6 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
 
     var hasToken: Bool { Keychain.get(Self.tokenKey) != nil }
 
-    /// The stored token if it is fresh and includes the playlist scopes;
-    /// nil means the user has to tap Connect once more.
-    var webAPIToken: String? {
-        let defaults = UserDefaults.standard
-        guard let token = Keychain.get(Self.tokenKey),
-              defaults.stringArray(forKey: Self.tokenScopesKey) == Self.additionalScopes,
-              let issued = defaults.object(forKey: Self.tokenIssuedKey) as? Date,
-              Date().timeIntervalSince(issued) < Self.tokenLifetime else { return nil }
-        return token
-    }
 
     var capabilities: MusicCapabilities {
         let usable = sdkAvailable && Self.clientID != nil
@@ -163,7 +145,7 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
         #if canImport(SpotifyiOS)
         guard let appRemote, isSpotifyInstalled else { return }
         status = .authorizing
-        appRemote.authorizeAndPlayURI(uri ?? "", asRadio: false, additionalScopes: Self.additionalScopes) { [weak self] spotifyInstalled in
+        appRemote.authorizeAndPlayURI(uri ?? "") { [weak self] spotifyInstalled in
             Task { @MainActor in
                 if !spotifyInstalled { self?.status = .notInstalled }
             }
@@ -180,12 +162,9 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
         let params = appRemote.authorizationParameters(from: url)
         if let token = params?[SPTAppRemoteAccessTokenKey] {
             Keychain.set(token, for: Self.tokenKey)
-            UserDefaults.standard.set(Date(), forKey: Self.tokenIssuedKey)
-            UserDefaults.standard.set(Self.additionalScopes, forKey: Self.tokenScopesKey)
             appRemote.connectionParameters.accessToken = token
             status = .connecting
             appRemote.connect()
-            onAuthorized?()
         } else if let message = params?[SPTAppRemoteErrorDescriptionKey] {
             status = .failed("Spotify authorization failed: \(message)")
         }

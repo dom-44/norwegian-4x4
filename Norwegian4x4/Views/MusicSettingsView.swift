@@ -90,13 +90,13 @@ struct MusicSettingsView: View {
                 Link("Get Spotify from the App Store", destination: URL(string: "https://apps.apple.com/app/spotify-music-and-podcasts/id324684580")!)
             case .connected:
                 Button("Disconnect") { spotify.disconnect() }
-                Button("Sign out of Spotify", role: .destructive) { spotify.signOut() }
+                Button("Sign out of Spotify", role: .destructive) { spotify.signOut(); model.music.webAuth.signOut() }
             default:
                 Button(spotify.hasToken ? "Reconnect to Spotify" : "Connect Spotify") {
                     spotify.connectWithoutPlaying()
                 }
                 if spotify.hasToken {
-                    Button("Sign out of Spotify", role: .destructive) { spotify.signOut() }
+                    Button("Sign out of Spotify", role: .destructive) { spotify.signOut(); model.music.webAuth.signOut() }
                 }
             }
         } header: {
@@ -241,6 +241,7 @@ struct AutoMixSlotEditor: View {
 /// Status of the generated playlists, with Connect / Shuffle actions.
 struct AutoMixStatusView: View {
     @Environment(AppModel.self) private var model
+    @State private var signInError: String?
 
     var body: some View {
         let builder = model.music.autoMix
@@ -252,11 +253,14 @@ struct AutoMixStatusView: View {
                     Text(step).foregroundStyle(Theme.secondaryText)
                 }
             case .needsAuthorization:
-                Text("Connect Spotify to build the mix.").foregroundStyle(Theme.secondaryText)
+                Text("Sign in to Spotify once so the app can search songs and create the playlists.").foregroundStyle(Theme.secondaryText)
                 Button {
-                    model.music.spotify.connectWithoutPlaying()
+                    Task { signInError = await model.music.signInForAutoMix() }
                 } label: {
-                    Label("Connect Spotify", systemImage: "link")
+                    Label("Sign in to Spotify", systemImage: "person.crop.circle.badge.checkmark")
+                }
+                if let signInError {
+                    Text(signInError).font(.caption).foregroundStyle(.orange)
                 }
             case .failed(let message):
                 Text(message).foregroundStyle(.orange)

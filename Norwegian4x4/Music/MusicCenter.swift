@@ -1,3 +1,4 @@
+import AuthenticationServices
 import FourByFourCore
 import Foundation
 import Observation
@@ -17,6 +18,8 @@ final class MusicCenter {
     let spotify = SpotifyMusicProvider()
     let youtube = YouTubeMusicProvider()
     let autoMix = AutoMixBuilder()
+    /// Separate Web API sign-in for the auto mix (the App Remote token can't search).
+    let webAuth = SpotifyWebAuth()
     @ObservationIgnored private let manual = ManualMusicProvider()
     @ObservationIgnored private let silent = NoMusicProvider()
     @ObservationIgnored private let coordinator: MusicCoordinator
@@ -29,10 +32,6 @@ final class MusicCenter {
         self.preferences = preferences
         coordinator = MusicCoordinator(provider: NoMusicProvider(), preferences: preferences)
         coordinator.configure(provider: provider(for: preferences.provider), preferences: effectivePreferences)
-        spotify.onAuthorized = { [weak self] in
-            guard let self else { return }
-            prepareAutoMix(force: autoMix.state == .needsAuthorization)
-        }
     }
 
     var providerKind: MusicProviderKind { preferences.provider }
@@ -55,17 +54,40 @@ final class MusicCenter {
     }
 
     /// Builds a fresh auto mix if needed (or always with `force`). Without a
-    /// usable token the builder shows "connect again" instead; nothing here
-    /// switches apps on its own.
+    /// Web API sign-in the builder shows "sign in" instead; nothing here opens
+    /// a login on its own.
     func prepareAutoMix(force: Bool) {
         guard preferences.autoMixEnabled, let settings = preferences.autoMix, !autoMix.isBuilding else { return }
         guard force || autoMix.isStale(for: settings) else { return }
-        guard let token = spotify.webAPIToken else { autoMix.markNeedsAuthorization(); return }
+        guard webAuth.isSignedIn else { autoMix.markNeedsAuthorization(); return }
         Task {
+            let token: String
+            do {
+                token = try await webAuth.validAccessToken()
+            } catch {
+                autoMix.markNeedsAuthorization()
+                return
+            }
             await autoMix.build(settings: settings, token: token)
             // Takes effect from the next phase change, also mid-workout.
             coordinator.updateSelections(effectivePreferences)
         }
+    }
+
+    /// User tapped "Sign in": shows Spotify's login sheet, then builds the mix.
+    /// Returns an error message to show, or nil.
+    func signInForAutoMix() async -> String? {
+        do {
+            try await webAuth.signIn()
+        } catch let error as WebAPIError {
+            return error.message
+        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+        prepareAutoMix(force: true)
+        return nil
     }
 
     private func provider(for kind: MusicProviderKind) -> MusicProvider {
