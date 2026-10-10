@@ -34,7 +34,10 @@ struct PreWorkoutView: View {
         .background(Theme.background.ignoresSafeArea())
         .navigationTitle("Ready?")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { model.sensor.activate() }
+        .onAppear {
+            model.sensor.activate()
+            model.music.prepareAutoMix(force: false)
+        }
         .confirmationDialog("No heart rate sensor connected", isPresented: $confirmNoSensor, titleVisibility: .visible) {
             Button("Start without heart rate") { start() }
             Button("Cancel", role: .cancel) {}
@@ -100,7 +103,10 @@ struct PreWorkoutView: View {
                     .font(.subheadline).foregroundStyle(Theme.secondaryText)
             case .spotify:
                 Text("Spotify: \(model.music.spotify.status.label)").font(.subheadline).foregroundStyle(Theme.secondaryText)
-                if prefs.warmUp != nil {
+                if prefs.autoMixEnabled {
+                    AutoMixStatusView()
+                }
+                if model.music.effectivePreferences.warmUp != nil {
                     Button {
                         model.music.openSelection(for: .warmUp)
                     } label: {

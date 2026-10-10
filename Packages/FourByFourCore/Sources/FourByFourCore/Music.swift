@@ -35,10 +35,17 @@ public enum MusicProviderKind: String, Codable, CaseIterable, Sendable, Identifi
 public struct MusicSelection: Codable, Equatable, Sendable {
     public var title: String
     public var uri: String
+    /// Set for generated auto-mix playlists: number of tracks, so repeated
+    /// phases can start further into the playlist instead of on the same song.
+    public var trackCount: Int?
+    /// Track to start at (0-based); nil = start of the playlist.
+    public var startIndex: Int?
 
-    public init(title: String, uri: String) {
+    public init(title: String, uri: String, trackCount: Int? = nil, startIndex: Int? = nil) {
         self.title = title
         self.uri = uri
+        self.trackCount = trackCount
+        self.startIndex = startIndex
     }
 }
 
@@ -53,6 +60,11 @@ public struct MusicPreferences: Codable, Equatable, Sendable {
     public var coolDown: MusicSelection?
     /// Speak "switch to your … playlist" when music has to be changed by hand.
     public var spokenSwitchPrompts: Bool
+    /// Spotify only: genre-based playlists built before each workout. Optional
+    /// so settings saved by older versions still decode.
+    public var autoMix: AutoMixSettings?
+
+    public var autoMixEnabled: Bool { provider == .spotify && autoMix?.enabled == true }
 
     public init(provider: MusicProviderKind = .none, autoSwitch: Bool = true, spokenSwitchPrompts: Bool = true) {
         self.provider = provider
@@ -183,6 +195,8 @@ public final class MusicCoordinator {
     public private(set) var playingSelection: MusicSelection?
     public private(set) var consecutiveFailures = 0
     public private(set) var autoSwitchSuspended = false
+    /// How often each slot has started this session (for playlist rotation).
+    private var repetitions: [MusicSlot: Int] = [:]
     private var lastFailureAt: TimeInterval?
     private let clock: () -> TimeInterval
 
@@ -198,7 +212,14 @@ public final class MusicCoordinator {
         resetSession()
     }
 
+    /// Replaces the selections mid-session (e.g. an auto mix finished building)
+    /// without forgetting what is playing or the failure state.
+    public func updateSelections(_ preferences: MusicPreferences) {
+        self.preferences = preferences
+    }
+
     public func resetSession() {
+        repetitions = [:]
         activeSlot = nil
         playingSelection = nil
         consecutiveFailures = 0
@@ -216,7 +237,9 @@ public final class MusicCoordinator {
 
     private func decide(slot: MusicSlot, appIsActive: Bool) async -> MusicOutcome {
         guard provider.kind != .none else { return .nothing }
-        let selection = preferences[slot]
+        let repetition = repetitions[slot, default: 0]
+        repetitions[slot] = repetition + 1
+        let selection = preferences[slot].map { Self.rotated($0, repetition: repetition) }
 
         if provider.kind == .manual {
             guard slot != activeSlot else { return .nothing }
@@ -261,6 +284,15 @@ public final class MusicCoordinator {
             let reason = (error as? MusicProviderError) ?? .commandFailed(String(describing: error))
             return .manualPrompt(slot, selection, reason: reason)
         }
+    }
+
+    /// For generated playlists, the n-th repetition of a phase starts
+    /// `tracksPerRepetition × n` tracks in (wrapping around).
+    static func rotated(_ selection: MusicSelection, repetition: Int) -> MusicSelection {
+        guard let count = selection.trackCount, count > 0 else { return selection }
+        var copy = selection
+        copy.startIndex = (repetition * AutoMixSettings.tracksPerRepetition) % count
+        return copy
     }
 
     /// Best effort; errors are swallowed.

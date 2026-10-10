@@ -235,6 +235,33 @@ streamed or extracted.
   share link (`https://open.spotify.com/playlist/…` or `spotify:playlist:…`).
 - At each phase change the app asks Spotify to play the matching playlist.
 
+### Pick songs by genre (auto mix)
+
+*Music › Pick songs by genre* replaces the links with a **genre and tempo range
+per phase** (defaults: warm-up 110–130 BPM, intervals 145–175, recovery 100–125,
+cool-down 70–100). When the pre-workout screen opens (or on *Shuffle new
+songs*) the app:
+
+1. searches Spotify for ~60 tracks per genre (Web API `GET /search`, 10 per
+   page — the Development Mode limit since February 2026), from a random start
+   page so each workout differs;
+2. looks up tempo and energy at **ReccoBeats** (`api.reccobeats.com`, free, no
+   key) because Spotify's own audio-features endpoint is closed to apps created
+   after November 2024; half/double-time readings are accepted;
+3. keeps the fitting tracks (max 2 per artist, each track used once) and writes
+   them into four private playlists, `4x4 · Warm-up` etc., in your account
+   (`POST /me/playlists`, `PUT /playlists/{id}/items`). They are reused and
+   refilled; deleting them is harmless.
+
+Repeated intervals start two tracks further into the interval playlist, so
+each interval begins with a new song. The mix needs the extra scopes
+`playlist-modify-private` and `playlist-read-private`: after updating, tap
+*Connect Spotify* once. Tokens last ~1 h, so the mix is built right after
+connecting. If anything fails (no network, ReccoBeats down, too few fitting
+songs) the previous mix or your own links are used; the workout is never
+affected. Pure logic (`AutoMix.swift`) is unit-tested; the network calls are
+not.
+
 ### What is and isn't supported
 
 | Feature | Status |

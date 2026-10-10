@@ -16,6 +16,7 @@ struct MusicPrompt: Equatable {
 final class MusicCenter {
     let spotify = SpotifyMusicProvider()
     let youtube = YouTubeMusicProvider()
+    let autoMix = AutoMixBuilder()
     @ObservationIgnored private let manual = ManualMusicProvider()
     @ObservationIgnored private let silent = NoMusicProvider()
     @ObservationIgnored private let coordinator: MusicCoordinator
@@ -27,7 +28,11 @@ final class MusicCenter {
     init(preferences: MusicPreferences) {
         self.preferences = preferences
         coordinator = MusicCoordinator(provider: NoMusicProvider(), preferences: preferences)
-        coordinator.configure(provider: provider(for: preferences.provider), preferences: preferences)
+        coordinator.configure(provider: provider(for: preferences.provider), preferences: effectivePreferences)
+        spotify.onAuthorized = { [weak self] in
+            guard let self else { return }
+            prepareAutoMix(force: autoMix.state == .needsAuthorization)
+        }
     }
 
     var providerKind: MusicProviderKind { preferences.provider }
@@ -35,7 +40,32 @@ final class MusicCenter {
     func update(preferences: MusicPreferences) {
         guard preferences != self.preferences else { return }
         self.preferences = preferences
-        coordinator.configure(provider: provider(for: preferences.provider), preferences: preferences)
+        coordinator.configure(provider: provider(for: preferences.provider), preferences: effectivePreferences)
+    }
+
+    /// The user's settings with generated auto-mix playlists filled in.
+    /// A phase without a generated playlist keeps the user's own link.
+    var effectivePreferences: MusicPreferences {
+        guard preferences.autoMixEnabled else { return preferences }
+        var prefs = preferences
+        for slot in MusicSlot.allCases {
+            if let generated = autoMix.selections[slot] { prefs[slot] = generated }
+        }
+        return prefs
+    }
+
+    /// Builds a fresh auto mix if needed (or always with `force`). Without a
+    /// usable token the builder shows "connect again" instead; nothing here
+    /// switches apps on its own.
+    func prepareAutoMix(force: Bool) {
+        guard preferences.autoMixEnabled, let settings = preferences.autoMix, !autoMix.isBuilding else { return }
+        guard force || autoMix.isStale(for: settings) else { return }
+        guard let token = spotify.webAPIToken else { autoMix.markNeedsAuthorization(); return }
+        Task {
+            await autoMix.build(settings: settings, token: token)
+            // Takes effect from the next phase change, also mid-workout.
+            coordinator.updateSelections(effectivePreferences)
+        }
     }
 
     private func provider(for kind: MusicProviderKind) -> MusicProvider {
@@ -80,7 +110,7 @@ final class MusicCenter {
 
     /// User tapped "Open" / "Play" for a slot (foreground, user-initiated).
     func openSelection(for slot: MusicSlot) {
-        guard let selection = preferences[slot] else { return }
+        guard let selection = effectivePreferences[slot] else { return }
         switch preferences.provider {
         case .spotify:
             if spotify.status == .connected {

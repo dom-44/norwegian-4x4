@@ -20,7 +20,28 @@ struct MusicSettingsView: View {
 
             if prefs.provider == .spotify { spotifySection }
 
-            if prefs.provider == .spotify || prefs.provider == .youtube || prefs.provider == .manual {
+            if prefs.provider == .spotify {
+                Section {
+                    Toggle("Pick songs by genre", isOn: autoMixEnabled)
+                } footer: {
+                    Text("Choose a genre per phase. Before each workout the app finds songs whose tempo and energy fit the phase and puts them into private “4x4 ·” playlists in your Spotify account. Tempo data comes from ReccoBeats.")
+                }
+            }
+
+            if prefs.autoMixEnabled, let mix = prefs.autoMix {
+                Section {
+                    ForEach(MusicSlot.allCases) { slot in
+                        NavigationLink {
+                            AutoMixSlotEditor(slot: slot)
+                        } label: {
+                            LabeledContent(slot.displayName, value: "\(mix[slot].genre.displayName) · \(mix[slot].tempo.bpm.label) BPM")
+                        }
+                    }
+                    AutoMixStatusView()
+                } header: {
+                    Text("Genre per phase")
+                }
+            } else if prefs.provider == .spotify || prefs.provider == .youtube || prefs.provider == .manual {
                 Section {
                     ForEach(MusicSlot.allCases) { slot in
                         NavigationLink {
@@ -72,7 +93,7 @@ struct MusicSettingsView: View {
                 Button("Sign out of Spotify", role: .destructive) { spotify.signOut() }
             default:
                 Button(spotify.hasToken ? "Reconnect to Spotify" : "Connect Spotify") {
-                    spotify.authorizeAndPlay(uri: model.settings.music.warmUp?.uri)
+                    spotify.authorizeAndPlay(uri: model.music.effectivePreferences.warmUp?.uri)
                 }
                 if spotify.hasToken {
                     Button("Sign out of Spotify", role: .destructive) { spotify.signOut() }
@@ -82,6 +103,16 @@ struct MusicSettingsView: View {
             Text("Spotify")
         } footer: {
             Text("Uses the official Spotify iOS SDK to remote-control the Spotify app. Requires the Spotify app; playing a specific playlist requires Spotify Premium. Connecting briefly opens Spotify and returns here. Spotify must be running for automatic switching; while the phone is locked switching is attempted but not guaranteed by iOS.")
+        }
+    }
+
+    private var autoMixEnabled: Binding<Bool> {
+        Binding {
+            model.settings.music.autoMix?.enabled == true
+        } set: { on in
+            var mix = model.settings.music.autoMix ?? AutoMixSettings()
+            mix.enabled = on
+            model.settings.music.autoMix = mix
         }
     }
 
@@ -158,5 +189,99 @@ struct MusicSelectionEditor: View {
             model.settings.music[slot] = name.isEmpty ? nil : MusicSelection(title: name, uri: "")
         }
         dismiss()
+    }
+}
+
+struct AutoMixSlotEditor: View {
+    @Environment(AppModel.self) private var model
+    var slot: MusicSlot
+
+    var body: some View {
+        let standard = TempoProfile.standard(for: slot)
+        Form {
+            Section {
+                Picker("Genre", selection: binding(\.genre)) {
+                    ForEach(MusicGenre.allCases) { Text($0.displayName).tag($0) }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } header: {
+                Text("Genre")
+            }
+            Section {
+                Stepper("From \(tempo.bpm.lower) BPM", value: binding(\.tempo.bpm.lower), in: 50...max(50, tempo.bpm.upper - 5), step: 5)
+                Stepper("To \(tempo.bpm.upper) BPM", value: binding(\.tempo.bpm.upper), in: min(220, tempo.bpm.lower + 5)...220, step: 5)
+                if tempo != standard {
+                    Button("Reset to \(standard.bpm.label) BPM") { model.settings.music.autoMix?[slot].tempo = standard }
+                }
+            } header: {
+                Text("Song tempo")
+            } footer: {
+                Text("Songs analysed at half or double tempo count too (a 174 BPM drum & bass track is often listed as 87). Energy is matched automatically: \(Int(standard.minEnergy * 100))–\(Int(standard.maxEnergy * 100)) %.")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(Theme.background.ignoresSafeArea())
+        .navigationTitle(slot.displayName)
+    }
+
+    private var tempo: TempoProfile { model.settings.music.autoMix?[slot].tempo ?? .standard(for: slot) }
+
+    private func binding<Value>(_ path: WritableKeyPath<AutoMixSlot, Value>) -> Binding<Value> {
+        Binding {
+            (model.settings.music.autoMix ?? AutoMixSettings())[slot][keyPath: path]
+        } set: { value in
+            var mix = model.settings.music.autoMix ?? AutoMixSettings()
+            mix[slot][keyPath: path] = value
+            model.settings.music.autoMix = mix
+        }
+    }
+}
+
+/// Status of the generated playlists, with Connect / Shuffle actions.
+struct AutoMixStatusView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let builder = model.music.autoMix
+        VStack(alignment: .leading, spacing: 8) {
+            switch builder.state {
+            case .building(let step):
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text(step).foregroundStyle(Theme.secondaryText)
+                }
+            case .needsAuthorization:
+                Text("Connect Spotify to build the mix.").foregroundStyle(Theme.secondaryText)
+                Button {
+                    model.music.spotify.authorizeAndPlay(uri: model.music.effectivePreferences.warmUp?.uri)
+                } label: {
+                    Label("Connect Spotify", systemImage: "link")
+                }
+            case .failed(let message):
+                Text(message).foregroundStyle(.orange)
+                shuffleButton
+            case .ready, .idle:
+                if let builtAt = builder.builtAt, !builder.selections.isEmpty {
+                    Text("Mix ready · \(builtAt.formatted(date: .omitted, time: .shortened))").foregroundStyle(Theme.secondaryText)
+                } else {
+                    Text("No mix yet.").foregroundStyle(Theme.secondaryText)
+                }
+                if !builder.missingSlots.isEmpty {
+                    Text("Too few fitting songs for: \(builder.missingSlots.map(\.displayName).joined(separator: ", ")). Try another genre or a wider tempo range.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+                shuffleButton
+            }
+        }
+        .font(.subheadline)
+    }
+
+    private var shuffleButton: some View {
+        Button {
+            model.music.prepareAutoMix(force: true)
+        } label: {
+            Label("Shuffle new songs", systemImage: "shuffle")
+        }
     }
 }
