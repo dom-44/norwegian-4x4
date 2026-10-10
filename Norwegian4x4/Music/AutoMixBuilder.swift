@@ -28,6 +28,8 @@ final class AutoMixBuilder {
     private(set) var missingSlots: [MusicSlot] = []
     /// Thumbs up / down from the workout screen (persisted).
     private(set) var ratings = TrackRatings()
+    /// Interval start points learned from the ⏩ button (persisted).
+    private(set) var startPoints = TrackStartPoints()
 
     var isBuilding: Bool { if case .building = state { return true } else { return false } }
 
@@ -36,6 +38,7 @@ final class AutoMixBuilder {
     @ObservationIgnored private var builtFor: AutoMixSettings?
     private static let selectionsKey = "autoMix.selections"
     private static let ratingsKey = "autoMix.ratings"
+    private static let startPointsKey = "autoMix.startPoints"
     private static let builtAtKey = "autoMix.builtAt"
     private static let settingsKey = "autoMix.settings"
     private static func playlistKey(_ slot: MusicSlot) -> String { "autoMix.playlist.\(slot.rawValue)" }
@@ -59,11 +62,19 @@ final class AutoMixBuilder {
         if let data = defaults.data(forKey: Self.ratingsKey), let stored = try? JSONDecoder().decode(TrackRatings.self, from: data) {
             ratings = stored
         }
+        if let data = defaults.data(forKey: Self.startPointsKey), let stored = try? JSONDecoder().decode(TrackStartPoints.self, from: data) {
+            startPoints = stored
+        }
     }
 
     func updateRatings(_ change: (inout TrackRatings) -> Void) {
         change(&ratings)
         defaults.set(try? JSONEncoder().encode(ratings), forKey: Self.ratingsKey)
+    }
+
+    func updateStartPoints(_ change: (inout TrackStartPoints) -> Void) {
+        change(&startPoints)
+        defaults.set(try? JSONEncoder().encode(startPoints), forKey: Self.startPointsKey)
     }
 
     /// IDs of the generated "4x4 ·" playlists, for removing a disliked song.

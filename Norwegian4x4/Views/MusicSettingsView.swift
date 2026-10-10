@@ -71,6 +71,19 @@ struct MusicSettingsView: View {
                 }
             }
 
+            if prefs.provider == .spotify {
+                Section {
+                    LabeledContent("Songs with a start point", value: "\(model.music.learnedStartCount)")
+                    if model.music.learnedStartCount > 0 {
+                        Button("Reset start points", role: .destructive) { model.music.resetStartPoints() }
+                    }
+                } header: {
+                    Text("Interval start points")
+                } footer: {
+                    Text("During intervals, ⏩ skips 15 s ahead and remembers the spot: next time the song starts right there. Hold ⏩ to go back to the beginning and forget it.")
+                }
+            }
+
             if prefs.provider != .none {
                 Section {
                     if prefs.provider == .spotify {

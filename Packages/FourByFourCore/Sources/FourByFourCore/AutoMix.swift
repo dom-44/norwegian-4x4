@@ -294,6 +294,42 @@ public struct TrackRatings: Codable, Equatable, Sendable {
     }
 }
 
+/// Where each song should start in an interval, learned from the ⏩ button:
+/// the position the user jumped to becomes the song's start next time.
+/// (Spotify no longer gives new apps song sections, so there is nothing to
+/// look the chorus up in.)
+public struct TrackStartPoints: Codable, Equatable, Sendable {
+    /// Seconds per ⏩ tap.
+    public static let jumpSeconds = 15
+    /// Later positions are not an intro skip any more; they aren't learned.
+    public static let maxStartMs = 180_000
+    /// A song only gets moved to its start point if it is still this close
+    /// to its beginning (so a song the user rewound isn't yanked forward).
+    public static let seekWindowMs = 5_000
+
+    public var positions: [String: Int] = [:]
+
+    public init() {}
+
+    public func start(for id: String) -> Int? { positions[id] }
+
+    /// Records a jump to `positionMs`. Returns false if it was too late in the song.
+    @discardableResult
+    public mutating func learn(_ id: String, positionMs: Int) -> Bool {
+        guard positionMs > 0, positionMs <= Self.maxStartMs else { return false }
+        positions[id] = positionMs
+        return true
+    }
+
+    public mutating func clear(_ id: String) { positions[id] = nil }
+
+    /// Where to seek to when a song begins playing at `positionMs`, if anywhere.
+    public func seekTarget(for id: String, currentMs positionMs: Int) -> Int? {
+        guard let start = positions[id], positionMs < Self.seekWindowMs, start > positionMs else { return nil }
+        return start
+    }
+}
+
 public enum TrackPicker {
     /// Most tracks allowed from one artist in a phase playlist.
     public static let maxPerArtist = 2

@@ -294,3 +294,43 @@ final class AutoMixRotationTests: XCTestCase {
         XCTAssertEqual(provider.played.map(\.startIndex), [0, 2])
     }
 }
+
+final class TrackStartPointsTests: XCTestCase {
+    func testLearnedStartIsUsedWhenSongBegins() {
+        var points = TrackStartPoints()
+        XCTAssertTrue(points.learn("a", positionMs: 45_000))
+        XCTAssertEqual(points.seekTarget(for: "a", currentMs: 0), 45_000)
+        XCTAssertEqual(points.seekTarget(for: "a", currentMs: 1_200), 45_000)
+        XCTAssertNil(points.seekTarget(for: "b", currentMs: 0))
+    }
+
+    func testNoSeekOnceSongIsUnderway() {
+        var points = TrackStartPoints()
+        points.learn("a", positionMs: 45_000)
+        XCTAssertNil(points.seekTarget(for: "a", currentMs: 6_000))
+        XCTAssertNil(points.seekTarget(for: "a", currentMs: 50_000))
+    }
+
+    func testLateJumpsAreNotLearned() {
+        var points = TrackStartPoints()
+        XCTAssertFalse(points.learn("a", positionMs: 200_000))
+        XCTAssertFalse(points.learn("a", positionMs: 0))
+        XCTAssertNil(points.start(for: "a"))
+    }
+
+    func testLaterJumpReplacesEarlierAndClearRemoves() {
+        var points = TrackStartPoints()
+        points.learn("a", positionMs: 15_000)
+        points.learn("a", positionMs: 30_000)
+        XCTAssertEqual(points.start(for: "a"), 30_000)
+        points.clear("a")
+        XCTAssertNil(points.start(for: "a"))
+    }
+
+    func testRoundTripsThroughJSON() throws {
+        var points = TrackStartPoints()
+        points.learn("a", positionMs: 30_000)
+        let decoded = try JSONDecoder().decode(TrackStartPoints.self, from: JSONEncoder().encode(points))
+        XCTAssertEqual(decoded, points)
+    }
+}

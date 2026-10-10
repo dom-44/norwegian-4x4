@@ -65,6 +65,17 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
     /// Spotify always starts playback when authorizing; set when the user
     /// only wanted to connect, so playback is paused once connected.
     @ObservationIgnored private var pauseRequestedAt: Date?
+    /// Playback position from the last player state, and when it was reported.
+    @ObservationIgnored private var reportedPositionMs = 0
+    @ObservationIgnored private var reportedAt = Date()
+    @ObservationIgnored private var trackDurationMs = 0
+    /// Called when a new song starts (track URI, position in ms).
+    @ObservationIgnored var onTrackStarted: ((String, Int) -> Void)?
+
+    /// Where in the song playback is now (estimated between player updates).
+    var currentPositionMs: Int {
+        isPaused ? reportedPositionMs : reportedPositionMs + Int(Date().timeIntervalSince(reportedAt) * 1000)
+    }
 
     #if canImport(SpotifyiOS)
     @ObservationIgnored private var remote: SPTAppRemote?
@@ -232,6 +243,30 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
 
     enum TrackCommand { case next, previous, restart }
 
+    /// Jumps forward by `seconds` (stopping short of the end). Returns the
+    /// new position in ms, or nil when not connected.
+    @discardableResult
+    func jumpForward(seconds: Int) -> Int? {
+        let target = currentPositionMs + seconds * 1000
+        let capped = trackDurationMs > 0 ? min(target, trackDurationMs - 5_000) : target
+        guard capped > currentPositionMs, seek(toMs: capped) else { return nil }
+        return capped
+    }
+
+    /// Returns false when not connected.
+    @discardableResult
+    func seek(toMs position: Int) -> Bool {
+        #if canImport(SpotifyiOS)
+        guard let player = appRemote?.playerAPI, appRemote?.isConnected == true else { return false }
+        player.seek(toPosition: position, callback: nil)
+        reportedPositionMs = position
+        reportedAt = Date()
+        return true
+        #else
+        return false
+        #endif
+    }
+
     func perform(_ command: TrackCommand) {
         #if canImport(SpotifyiOS)
         guard let player = appRemote?.playerAPI, appRemote?.isConnected == true else { return }
@@ -358,8 +393,13 @@ extension SpotifyMusicProvider: SPTAppRemoteDelegate, SPTAppRemotePlayerStateDel
         nowPlaying = "\(state.track.name) — \(state.track.artist.name)"
         trackTitle = state.track.name
         trackArtist = state.track.artist.name
+        let isNewTrack = state.track.uri != trackURI
         trackURI = state.track.uri
         isPaused = state.isPaused
+        reportedPositionMs = state.playbackPosition
+        reportedAt = Date()
+        trackDurationMs = Int(state.track.duration)
+        if isNewTrack { onTrackStarted?(state.track.uri, state.playbackPosition) }
     }
 }
 #endif

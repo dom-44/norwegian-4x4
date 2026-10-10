@@ -277,6 +277,12 @@ On the workout screen 👍 makes a song three times as likely to be picked in
 future mixes; 👎 skips it, removes it from the `4x4 ·` playlists and excludes
 it from now on. Ratings are stored on the device (*Music › Your ratings*).
 
+During intervals ⏩ skips 15 s ahead and remembers the spot: the next time the
+song plays in an interval, the app seeks straight there (only if the song is
+still within its first 5 s, so manual rewinds aren't overridden). Holding ⏩
+goes back to 0 and forgets the start point. Spotify no longer gives new apps
+song sections (audio analysis), so the fast part can't be found automatically.
+
 ### What is and isn't supported
 
 | Feature | Status |

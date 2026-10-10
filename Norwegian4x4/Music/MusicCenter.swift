@@ -27,11 +27,14 @@ final class MusicCenter {
     private(set) var preferences: MusicPreferences
     private(set) var prompt: MusicPrompt? = nil
     private(set) var lastSwitched: MusicSelection? = nil
+    /// Phase of the running workout (nil outside a workout).
+    private(set) var currentPhase: PhaseKind? = nil
 
     init(preferences: MusicPreferences) {
         self.preferences = preferences
         coordinator = MusicCoordinator(provider: NoMusicProvider(), preferences: preferences)
         coordinator.configure(provider: provider(for: preferences.provider), preferences: effectivePreferences)
+        spotify.onTrackStarted = { [weak self] uri, position in self?.trackStarted(uri: uri, positionMs: position) }
     }
 
     var providerKind: MusicProviderKind { preferences.provider }
@@ -110,6 +113,38 @@ final class MusicCenter {
         autoMix.updateRatings { $0 = TrackRatings() }
     }
 
+    // MARK: Interval start points (workout screen)
+
+    /// True while ⏩ is offered: during intervals, songs can be moved to the fast part.
+    var canJumpToChorus: Bool { currentPhase == .interval }
+
+    /// ⏩: jumps 15 s ahead and remembers the spot as the song's interval start.
+    func jumpForwardInCurrentTrack() {
+        guard let position = spotify.jumpForward(seconds: TrackStartPoints.jumpSeconds),
+              let id = spotify.trackURI.flatMap(TrackRatings.trackID(fromURI:)) else { return }
+        autoMix.updateStartPoints { $0.learn(id, positionMs: position) }
+    }
+
+    /// Long press on ⏩: the jump went too far. Back to 0, start point forgotten.
+    func forgetStartOfCurrentTrack() {
+        if let id = spotify.trackURI.flatMap(TrackRatings.trackID(fromURI:)) {
+            autoMix.updateStartPoints { $0.clear(id) }
+        }
+        spotify.perform(.restart)
+    }
+
+    var learnedStartCount: Int { autoMix.startPoints.positions.count }
+
+    func resetStartPoints() {
+        autoMix.updateStartPoints { $0 = TrackStartPoints() }
+    }
+
+    private func trackStarted(uri: String, positionMs: Int) {
+        guard currentPhase == .interval, let id = TrackRatings.trackID(fromURI: uri),
+              let target = autoMix.startPoints.seekTarget(for: id, currentMs: positionMs) else { return }
+        spotify.seek(toMs: target)
+    }
+
     /// User tapped "Sign in": shows Spotify's login sheet, then builds the mix.
     /// Returns an error message to show, or nil.
     func signInForAutoMix() async -> String? {
@@ -139,16 +174,19 @@ final class MusicCenter {
         coordinator.resetSession()
         prompt = nil
         lastSwitched = nil
+        currentPhase = nil
         if preferences.provider == .spotify { spotify.reconnectQuietly() }
     }
 
     func endSession() {
         prompt = nil
+        currentPhase = nil
         coordinator.resetSession()
     }
 
     /// Called on every phase start. Returns text to speak, if any.
     func phaseStarted(_ kind: PhaseKind, appIsActive: Bool) async -> String? {
+        currentPhase = kind
         let outcome = await coordinator.phaseDidStart(kind, appIsActive: appIsActive)
         switch outcome {
         case .nothing:

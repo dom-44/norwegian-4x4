@@ -317,7 +317,21 @@ private struct NowPlayingBar: View {
                         label: rating == .liked ? "Liked. Tap to undo" : "Like: play more often",
                         tint: rating == .liked ? Theme.accent : nil) { model.music.toggleLikeCurrentTrack() }
             }
-            control("arrow.counterclockwise", label: "Play song again from the start") { spotify.perform(.restart) }
+            if model.music.canJumpToChorus {
+                // Intervals: skip slow intros. The spot is remembered for next time.
+                // Tap and hold are separate gestures; on a Button the hold would also fire the tap.
+                controlIcon("goforward.15", tint: nil)
+                    .contentShape(Circle())
+                    .onTapGesture { model.music.jumpForwardInCurrentTrack(); Haptics.tap() }
+                    .onLongPressGesture(minimumDuration: 0.6) { model.music.forgetStartOfCurrentTrack(); Haptics.tap() }
+                    .accessibilityElement()
+                    .accessibilityLabel("Skip 15 seconds ahead; the song starts here next time")
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { model.music.jumpForwardInCurrentTrack() }
+                    .accessibilityAction(named: "Back to the beginning and forget the start") { model.music.forgetStartOfCurrentTrack() }
+            } else {
+                control("arrow.counterclockwise", label: "Play song again from the start") { spotify.perform(.restart) }
+            }
             control("forward.end.fill", label: "Next song") { spotify.perform(.next) }
         }
         .padding(.leading, 12).padding(.trailing, 6).padding(.vertical, 6)
@@ -329,13 +343,17 @@ private struct NowPlayingBar: View {
             action()
             Haptics.tap()
         } label: {
-            Image(systemName: symbol)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(tint ?? .white)
-                .frame(width: 44, height: 44)
-                .background((tint ?? .white).opacity(tint == nil ? 0.1 : 0.2), in: Circle())
+            controlIcon(symbol, tint: tint)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
+    }
+
+    private func controlIcon(_ symbol: String, tint: Color?) -> some View {
+        Image(systemName: symbol)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(tint ?? .white)
+            .frame(width: 44, height: 44)
+            .background((tint ?? .white).opacity(tint == nil ? 0.1 : 0.2), in: Circle())
     }
 }
