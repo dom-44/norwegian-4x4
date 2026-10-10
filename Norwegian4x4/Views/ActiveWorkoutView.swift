@@ -126,6 +126,9 @@ struct ActiveWorkoutView: View {
         if let prompt = model.music.prompt {
             MusicPromptBanner(prompt: prompt)
         }
+        if model.music.providerKind == .spotify, model.music.spotify.status == .connected, model.music.spotify.trackTitle != nil {
+            NowPlayingBar()
+        }
     }
 
     private var heartRate: some View {
@@ -270,5 +273,46 @@ private struct MusicPromptBanner: View {
         }
         .padding(12)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+/// Current Spotify track with previous / restart / next. Large targets so
+/// it can be hit while running.
+private struct NowPlayingBar: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let spotify = model.music.spotify
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: spotify.isPaused ? "pause.circle" : "music.note").foregroundStyle(Theme.accent)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(spotify.trackTitle ?? "").font(.subheadline.weight(.semibold)).lineLimit(1)
+                    Text(spotify.trackArtist ?? "").font(.caption).foregroundStyle(Theme.secondaryText).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            HStack {
+                control("backward.end.fill", label: "Previous song") { spotify.perform(.previous) }
+                control("arrow.counterclockwise", label: "Play song again from the start") { spotify.perform(.restart) }
+                control("forward.end.fill", label: "Next song") { spotify.perform(.next) }
+            }
+        }
+        .padding(12)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func control(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            Haptics.tap()
+        } label: {
+            Image(systemName: symbol)
+                .font(.title3.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel(label)
     }
 }

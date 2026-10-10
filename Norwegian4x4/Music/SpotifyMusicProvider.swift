@@ -53,6 +53,8 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
 
     private(set) var status: Status = .disconnected
     private(set) var nowPlaying: String? = nil
+    private(set) var trackTitle: String? = nil
+    private(set) var trackArtist: String? = nil
     private(set) var isPaused = true
     let kind: MusicProviderKind = .spotify
 
@@ -225,6 +227,21 @@ final class SpotifyMusicProvider: NSObject, MusicProvider {
         #endif
     }
 
+    // MARK: Track controls (workout screen; best effort, failures are ignored)
+
+    enum TrackCommand { case next, previous, restart }
+
+    func perform(_ command: TrackCommand) {
+        #if canImport(SpotifyiOS)
+        guard let player = appRemote?.playerAPI, appRemote?.isConnected == true else { return }
+        switch command {
+        case .next: player.skip(toNext: nil)
+        case .previous: player.skip(toPrevious: nil)
+        case .restart: player.seek(toPosition: 0, callback: nil)
+        }
+        #endif
+    }
+
     #if canImport(SpotifyiOS)
     /// Needed to start a playlist at a given track; nil falls back to playing
     /// the playlist from the top.
@@ -338,6 +355,8 @@ extension SpotifyMusicProvider: SPTAppRemoteDelegate, SPTAppRemotePlayerStateDel
 
     private func apply(_ state: SPTAppRemotePlayerState) {
         nowPlaying = "\(state.track.name) — \(state.track.artist.name)"
+        trackTitle = state.track.name
+        trackArtist = state.track.artist.name
         isPaused = state.isPaused
     }
 }
